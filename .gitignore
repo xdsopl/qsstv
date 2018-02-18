@@ -5,4 +5,5 @@ ui_*.h
 moc_*.cpp
 qrc_*.cpp
 .qmake.stash
+qsstv/qsstv
 .swp.*
