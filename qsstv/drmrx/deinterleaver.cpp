@@ -1,4 +1,3 @@
-
 /*
 *    File deinterleaver.c
 *
@@ -105,9 +104,9 @@ int *deinterleaver(int xinA, int tA, int xinB, int tB)
       PIofi = (tA * PIofi + qA) % sA;
       while (PIofi >= xinA)
 
-	{
-	  PIofi = (tA * PIofi + qA) % sA;
-	}
+        {
+          PIofi = (tA * PIofi + qA) % sA;
+        }
       deinterl[PIofi] = i;
     }
   deinterl[xinA] = xinA;
@@ -118,9 +117,9 @@ int *deinterleaver(int xinA, int tA, int xinB, int tB)
       PIofi = (tB * PIofi + qB) % sB;
       while (PIofi >= xinB)
 
-	{
-	  PIofi = (tB * PIofi + qB) % sB;
-	}
+        {
+          PIofi = (tB * PIofi + qB) % sB;
+        }
       deinterl[PIofi + xinA] = i + xinA;
     }
   return (deinterl);

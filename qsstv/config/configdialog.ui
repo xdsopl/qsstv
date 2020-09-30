@@ -32,7 +32,7 @@
    <item>
     <widget class="QTabWidget" name="configTabWidget">
      <property name="currentIndex">
-      <number>2</number>
+      <number>10</number>
      </property>
      <widget class="QWidget" name="operatorTab">
       <attribute name="title">
@@ -284,31 +284,6 @@
        </item>
       </layout>
      </widget>
-     <widget class="QWidget" name="notifyTab">
-      <attribute name="title">
-       <string>Notifications</string>
-      </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout_11a">
-       <property name="spacing">
-        <number>1</number>
-       </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
-       <item>
-        <widget class="hybridNotifyConfig" name="hybridNotifyWidget" native="true"/>
-       </item>
-      </layout>
-     </widget>
      <widget class="QWidget" name="profilesTab">
       <attribute name="title">
        <string>DRM Profiles</string>
@@ -444,12 +419,6 @@
    <class>frequencySelectWidget</class>
    <extends>QWidget</extends>
    <header>frequencyselectwidget.h</header>
-   <container>1</container>
-  </customwidget>
-  <customwidget>
-   <class>hybridNotifyConfig</class>
-   <extends>QWidget</extends>
-   <header>hybridnotifyconfig.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

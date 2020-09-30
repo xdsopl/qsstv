@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -127,7 +127,7 @@ void calibration::hasFinished(int result)
 /**
  * @brief initialize
  *
- * @param bool isRX: If isRX is set then the receive clock will be calibrated, else the transmit clock will be calibrated.
+ * @param[in] isRX: If isRX is set then the receive clock will be calibrated, else the transmit clock will be calibrated.
  *
  * Start is called by exec and performs the clock calibration using NTP (Network Time Protocol).
  * It starts counting when the first 100 blocks are read or when the first 100 blocks are written in order to start with a stable condition.

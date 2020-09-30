@@ -5,9 +5,9 @@
 #include <QCursor>
 
 
-const QString MAJORVERSION  = "9.2";
+const QString MAJORVERSION  = "9.4";
 const QString CONFIGVERSION = "9.0";
-const QString MINORVERSION  = ".6";
+const QString MINORVERSION  = ".4";
 const QString LOGVERSION = ("qsstv."+MAJORVERSION+MINORVERSION+".log");
 const QString ORGANIZATION = "ON4QZ";
 const QString APPLICATION  = ("qsstv_" +CONFIGVERSION);
@@ -24,10 +24,13 @@ logFile *logFilePtr;
 configDialog *configDialogPtr;
 
 
-ftpInterface *notifyRXIntf;
-ftpInterface *hybridTxIntf;
-ftpInterface *notifyTXIntf;
-ftpInterface *onlineStatusIntf;
+ftpThread *notifyRXIntfPtr;
+ftpThread *hybridTxIntfPtr;
+ftpThread *notifyTXIntfPtr;
+ftpThread *onlineStatusIntfPtr;
+ftpThread *hybridRxIntfPtr;
+ftpThread *saveImageIntfPtr;
+
 
 
 
@@ -42,7 +45,11 @@ xmlInterface *xmlIntfPtr;
 logBook *logBookPtr;
 fileWatcher *fileWatcherPtr;
 
+
+int fftNumBlocks=2;
 bool useHybrid;
+bool inStartup;
+
 
 
 
@@ -78,6 +85,7 @@ void globalInit()
 
 void globalEnd(void)
 {
+  logFilePtr->writeSettings();
   logFilePtr->close();
 }
 

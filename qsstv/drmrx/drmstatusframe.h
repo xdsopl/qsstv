@@ -52,10 +52,7 @@ private:
   float prevWMERFAC;
   int prevFreqOff;
   int prevBlockCount;
-
-
-
-
+  int drmBusyCount;
 };
 
 QString modeToString(uint mode);

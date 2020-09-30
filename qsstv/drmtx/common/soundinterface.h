@@ -29,7 +29,7 @@
 #ifndef _SOUNDINTERFACE_H
 #define _SOUNDINTERFACE_H
 #include "appglobal.h"
-#include "utils/vector.h"
+#include "vector.h"
 
 //class CSoundInInterface : public CSelectionInterface
 //{

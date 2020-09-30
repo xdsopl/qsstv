@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -38,7 +38,6 @@ int main( int argc, char ** argv )
   int result;
   QTimer tm;
   tm.setSingleShot(true);
-  QApplication::setColorSpec( QApplication::ManyColor );
 
   QCoreApplication::setOrganizationName(ORGANIZATION);
   QCoreApplication::setApplicationName(APPLICATION);
@@ -47,7 +46,9 @@ int main( int argc, char ** argv )
   QSplashScreen splash(pixmap,Qt::WindowStaysOnTopHint);
 
   splashPtr=&splash;
+#ifdef QT_NO_DEBUG
   splash.show();
+#endif
   QFont f;
   f.setBold(true);
   f.setPixelSize(20);

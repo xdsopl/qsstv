@@ -7,10 +7,6 @@
 #include <qpolygon.h>
 #include <QImage>
 
-
-#define FFTAVERAGING 0.1
-#define VOLAVG 0.1
-//#define VALAVG 1.
 #define FFTHIGH 2900
 #define FFTLOW  200
 #define FFTSPAN (FFTHIGH-FFTLOW)

@@ -31,7 +31,7 @@
 
 #include "../GlobalDefinitions.h"
 #include "../tables/TableQAMMapping.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../Parameter.h"
 
 

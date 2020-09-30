@@ -44,7 +44,7 @@ public:
   void setXScaleMultiplier(double mul);
   void setAlternativeScaleMultiplier(double mul);
   void setOffset(unsigned int offset) {xOffset=offset;}
-  void init(QString title=QString::null);
+  void init(QString title=QString());
 
   void add1(short int *data, unsigned long len,QString curveName,QString yLeftLabel);
   void add1(double *data, unsigned long len,QString curveName,QString yLeftLabel);

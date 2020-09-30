@@ -82,14 +82,25 @@ typedef struct opj_decompress_params
 
 
 
-class jp2IO
+class jp2IO: public QObject
 {
+  Q_OBJECT
 public:
   jp2IO();
   bool check(QString fileName);
   QImage decode(QString fileName);
   QByteArray encode(QImage qimage, QImage &newImage, int &fileSize, int compressionRatio=0 );
+  void setParams(QImage *im,QString filename,bool tFromCache)
+  {
+    threadImage=im;
+    threadFilename=filename;
+    fromCache=tFromCache;
+  }
+public slots:
+  void slotStart();
 
+signals:
+  void done(bool,bool);
 private:
   int magicFormat;
   QString magicStr;
@@ -106,6 +117,9 @@ private:
   // used in encode (compress)
   raw_cparameters_t raw_cp;
   bool createImage(QImage qimage);
+  QImage *threadImage;
+  QString threadFilename;
+  bool fromCache;
 };
 
 #endif // JP2READER_H

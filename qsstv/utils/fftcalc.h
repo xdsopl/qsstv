@@ -13,13 +13,13 @@ public:
   double *out;
 private:
   void createHamming();
-  void doFFT();
   double *hammingBuffer;
   double *dataBuffer;
+  double *dataBufferWindowed;
   int windowSize;
   int fftLength;
   int samplingrate;
-  unsigned int blocks;
+  unsigned int numBlocks;
   unsigned int blockIndex;
   fftw_plan plan;
 };

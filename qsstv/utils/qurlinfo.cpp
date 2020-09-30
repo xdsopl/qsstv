@@ -108,15 +108,24 @@ public:
     This enum is used by the permissions() function to report the
     permissions of a file.
 
-    \var ReadOwner The file is readable by the owner of the file.
-    \var WriteOwner The file is writable by the owner of the file.
-    \var ExeOwner The file is executable by the owner of the file.
-    \var ReadGroup The file is readable by the group.
-    \var WriteGroup The file is writable by the group.
-    \var ExeGroup The file is executable by the group.
-    \var ReadOther The file is readable by anyone.
-    \var WriteOther The file is writable by anyone.
-    \var ExeOther The file is executable by anyone.
+    \var QUrlInfo::ReadOwner
+ The file is readable by the owner of the file.
+    \var QUrlInfo::WriteOwner
+ The file is writable by the owner of the file.
+    \var QUrlInfo::ExeOwner
+ The file is executable by the owner of the file.
+    \var QUrlInfo::ReadGroup
+ The file is readable by the group.
+    \var QUrlInfo::WriteGroup
+ The file is writable by the group.
+    \var QUrlInfo::ExeGroup
+ The file is executable by the group.
+    \var QUrlInfo::ReadOther
+ The file is readable by anyone.
+    \var QUrlInfo::WriteOther
+ The file is writable by anyone.
+    \var QUrlInfo::ExeOther
+  The file is executable by anyone.
 */
 
 /*!

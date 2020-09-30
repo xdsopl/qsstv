@@ -122,7 +122,7 @@ for(ci=(n)-1;ci >=0;ci--)\
 static void
 generate_gf(void)
 {
-  register int i, mask;
+  int i, mask;
 
   mask = 1;
   Alpha_to[MM] = 0;
@@ -168,7 +168,7 @@ generate_gf(void)
 static void
 gen_poly(void)
 {
-  register int i, j;
+  int i, j;
 
   Gg[0] = 1;
   for (i = 0; i < NN - KK; i++) {
@@ -202,7 +202,7 @@ gen_poly(void)
 int
 encode_rs(dtype data[], dtype bb[])
 {
-  register int i, j;
+  int i, j;
   gf feedback;
   CLEAR(bb,NN-KK);
 

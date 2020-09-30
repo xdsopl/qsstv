@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *

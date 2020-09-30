@@ -66,13 +66,11 @@ public:
   void forgetTxFileName();
   etxState getTXState() { return txState;}
   void setDRMTxParams(drmTxParams params);
-  void setOnlineStatus(bool online, QString info="");
-  void who();
+//  void setOnlineStatus(bool online, QString info="");
   //  bool initDRMFIX(txSession *sessionPtr);
   int calcTxTime(bool binary, int overhead);
   void txTestPattern(imageViewer *ivPtr, etpSelect sel);
   bool txBusy();
-
 
 private:
   void waitTxOn();

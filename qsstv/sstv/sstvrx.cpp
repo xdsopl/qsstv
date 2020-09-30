@@ -8,7 +8,7 @@
 
 
 #ifndef QT_NO_DEBUG
-#include "utils/arraydumper.h"
+#include "arraydumper.h"
 #include "scope/scopeview.h"
 #include "scope/scopeoffset.h"
 #endif
@@ -17,6 +17,10 @@ QString defaultImageFormat;
 int minCompletion;
 
 #define DECAY 0.9956
+
+#ifdef DISABLENARROW
+  #pragma message "NARROW DETECTION DISABLED"
+#endif
 
 const QString stateStr[sstvRx::END+1]=
 {
@@ -54,7 +58,6 @@ void sstvRx::init()
   scopeViewerData->setCurveName("STATE",SCDATA3);
   scopeViewerData->setCurveName("DEMOD",SCDATA4);
   scopeViewerData->setAxisTitles("Samples","int","State");
-
   scopeViewerSyncNarrow->setAlternativeScaleMultiplier(SUBSAMPLINGFACTOR/rxClock);
   scopeViewerSyncWide->setAlternativeScaleMultiplier(SUBSAMPLINGFACTOR/rxClock);
 #endif
@@ -65,12 +68,12 @@ void sstvRx::resetParams(bool bufferReset)
   bufferCounter=0;
   if(bufferReset)
     {
+      addToLog("reset Buffers",LOGRXMAIN);
       agcVolume=0;
       bufferVideoDemod.reset();
       bufferSync1200Vol.reset();
       bufferSync1900Vol.reset();
       bufferInputVol.reset();
-//      bufferSyncDemod.skip(RXSTRIPE);
       syncNarrowProc.reset();
       syncWideProc.reset();
     }
@@ -89,17 +92,18 @@ sstvRx::~sstvRx()
 
 void sstvRx::setFilters()
 {
-  if(videoFilterPtr==NULL) videoFilterPtr=new videoFilter(RXSTRIPE);
-  else videoFilterPtr->init();
+  if(videoFilterPtr==NULL)
+    videoFilterPtr=new videoFilter(RXSTRIPE);
+  else
+    videoFilterPtr->init();
   if(syncFilterPtr==NULL) syncFilterPtr=new syncFilter(RXSTRIPE);
   else syncFilterPtr->init();
 }
 
 
-
-void sstvRx::run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr)
+//void sstvRx::run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr)
+void sstvRx::run(DSPFLOAT *dataPtr,DSPFLOAT *volumePtr)
 {
-  int i;
   bufferCounter++;
   if(videoFilterPtr==NULL)
     {
@@ -107,23 +111,22 @@ void sstvRx::run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr)
       return;
     }
   // run AGC
-  for(i=0;i<RXSTRIPE;i++)
-    {
-      DSPFLOAT tmp=sqrt(dataPtr[i]*dataPtr[i]);
-      if(tmp>agcVolume) agcVolume=tmp;
-      else agcVolume*=DECAY;
-      if(agcVolume<1000) agcVolume=1000;  //maximum gain is 8
-      dataPtr[i]=dataPtr[i]*8000/agcVolume;
-    }
+//  for(i=0;i<RXSTRIPE;i++)
+//    {
+//      DSPFLOAT tmp=sqrt(dataPtr[i]*dataPtr[i]);
+//      if(tmp>agcVolume) agcVolume=tmp;
+//      else agcVolume*=DECAY;
+//      if(agcVolume<1000) agcVolume=1000;  //maximum gain is 8
+//      dataPtr[i]=dataPtr[i]*8000/agcVolume;
+//    }
   videoFilterPtr->process(dataPtr);
   bufferVideoDemod.putNoCheck(videoFilterPtr->demodPtr,RXSTRIPE);
   syncFilterPtr->process(dataPtr);
-  //  bufferSyncDemod.putNoCheck(syncFilterPtr->demodPtr,RXSTRIPE);
   bufferSync1200Vol.putNoCheck(syncFilterPtr->detect1200Ptr,RXSTRIPE);
+#ifndef DISABLENARROW
   bufferSync1900Vol.putNoCheck(syncFilterPtr->detect1900Ptr,RXSTRIPE);
-  //  bufferSyncVol.putNoCheck(syncFilterPtr->test1Ptr,RXSTRIPE);
-  //  bufferTest.putNoCheck(syncFilterPtr->test2Ptr,RXSTRIPE);
-  bufferInputVol.putNoCheck(inputVolumePtr,RXSTRIPE);
+#endif
+  bufferInputVol.putNoCheck(volumePtr ,RXSTRIPE);
 
   while (bufferVideoDemod.count())
     {
@@ -131,8 +134,8 @@ void sstvRx::run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr)
       syncNarrowProc.freqPtr=bufferVideoDemod.readPointer();
       syncWideProc.syncVolumePtr =bufferSync1200Vol.readPointer();
       syncNarrowProc.syncVolumePtr =bufferSync1900Vol.readPointer();
-//      syncWideProc.inputVolumePtr=bufferInputVol.readPointer();
-//      syncNarrowProc.inputVolumePtr=bufferInputVol.readPointer();
+      syncWideProc.inputVolumePtr=bufferInputVol.readPointer();
+      syncNarrowProc.inputVolumePtr=bufferInputVol.readPointer();
 
       displaySyncEvent* ce;
       if(syncProcPtr)
@@ -145,6 +148,7 @@ void sstvRx::run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr)
         }
       QApplication::postEvent(dispatcherPtr, ce);
 #ifndef QT_NO_DEBUG
+      scopeViewerData->addData(SCDATA1,bufferInputVol.readPointer(),syncWideProc.sampleCounter,RXSTRIPE);
       scopeViewerData->addData(SCDATA2,dataPtr,syncWideProc.sampleCounter,RXSTRIPE);
       scopeViewerData->addData(SCDATA4,bufferVideoDemod.readPointer(),syncWideProc.sampleCounter,RXSTRIPE);
 #endif
@@ -197,7 +201,7 @@ void sstvRx::process()
   if(syncStateWide!=syncProcessor::MODEDETECT)
     {
       usingWide=true;
-      syncNarrowProc.setEnabled(false);
+      syncNarrowProc.setSyncDetectionEnabled(false);
       syncProcPtr=&syncWideProc;
      }
   else
@@ -207,7 +211,7 @@ void sstvRx::process()
       if(syncStateNarrow!=syncProcessor::MODEDETECT)
         {
           usingWide=false;
-          syncWideProc.setEnabled(false);
+          syncWideProc.setSyncDetectionEnabled(false);
           syncProcPtr=&syncNarrowProc;
         }
       else
@@ -243,7 +247,7 @@ void sstvRx::process()
       stce= new rxSSTVStatusEvent(QString("Receiving ")+getSSTVModeNameLong(syncProcPtr->getMode()));
       lastUsedModeStr=getSSTVModeNameShort(syncProcPtr->getMode());
       QApplication::postEvent( dispatcherPtr, stce );  // Qt will delete it when done
-      // fall trough for first processing
+      // fallthrough for first processing
       switchState(SLANTADJUST); // for logging
       // clear the call received via fskID
       emit (resetCall());
@@ -259,7 +263,13 @@ void sstvRx::process()
       syncProcPtr->sampleCounter=block*RXSTRIPE;
       syncProcPtr->currentModePtr->setRxSampleCounter(syncProcPtr->sampleCounter);
       syncProcPtr->currentModePtr->redrawFast(true);
-      syncProcPtr->currentModePtr->process(bufferVideoDemod.readPointer(),syncPosition-syncProcPtr->sampleCounter,true,syncProcPtr->sampleCounter);
+      if(syncProcPtr->currentModePtr->process(bufferVideoDemod.readPointer(),syncPosition-syncProcPtr->sampleCounter,true,syncProcPtr->sampleCounter)!=modeBase::MBRUNNING)
+        {
+          switchState(END);
+          break;
+        }
+
+
       //    scopeViewerData->addData(SCDATA2,bufferVideoDemod.readPointer(),syncProcPtr->sampleCounter,RXSTRIPE);
       //      addToLog(QString("slant scope add demodIdx=%1; syncProcPtr->sampleCounter=%2").arg(bufferVideoDemod.getReadIndex()).arg(syncProcPtr->sampleCounter),LOGRXFUNC);
 #ifndef QT_NO_DEBUG
@@ -293,18 +303,14 @@ void sstvRx::process()
         {
           addToLog(QString("retrace detected"),LOGRXFUNC);
           saveImage();
-          //          addToLog(QString("before rewind readIndex:=%1 sampleCounter:=%2").arg(bufferVideoDemod.getReadIndex()).arg(syncProcPtr->sampleCounter),LOGRXFUNC);
           rewindBuffers(8*RXSTRIPE);
           syncProcPtr->resetRetraceFlag();
           resetParams(false);
-          //          addToLog(QString("after resetParms readIndex:=%1 sampleCounter:=%2").arg(bufferVideoDemod.getReadIndex()).arg(syncProcPtr->sampleCounter),LOGRXFUNC);
           break;
         }
-
-
       else
         {
-          if(syncProcPtr->currentModePtr->process(bufferVideoDemod.readPointer(),0,false,syncProcPtr->sampleCounter)==modeBase::MBENDOFIMAGE)
+          if(syncProcPtr->currentModePtr->process(bufferVideoDemod.readPointer(),0,false,syncProcPtr->sampleCounter)!=modeBase::MBRUNNING)
             {
               switchState(END);
             }
@@ -357,13 +363,15 @@ void sstvRx::process()
                         switchState(END);
                       }
                     bufferVideoDemod.skip(RXSTRIPE);
-
                   }
                 if(syncProcPtr->currentModePtr->process(bufferVideoDemod.readPointer(),0,false,syncProcPtr->sampleCounter)==modeBase::MBENDOFIMAGE)
                   {
                     switchState(END);
                   }
-                switchState(PROCESSING);
+                else
+                  {
+                    switchState(PROCESSING);
+                  }
               }
           }
         advanceBuffers();
@@ -378,12 +386,11 @@ void sstvRx::process()
       addToLog(QString("rewind after synclost %1").arg(diff),LOGRXFUNC);
       rewindBuffers(diff*RXSTRIPE);
       syncProcPtr->resetRetraceFlag();
-      resetParams(false);
+      resetParams(true);
       break;
     case WAIT:
       break;
     case END:
-
       saveImage();
       resetParams(false); // will set state to HUNTING
       advanceBuffers();
@@ -393,16 +400,17 @@ void sstvRx::process()
 
 void sstvRx::saveImage()
 {
-  bool done;
+  bool done=false;
   addToLog("saveImage",LOGRXFUNC);
   endImageSSTVRXEvent *endce;
   if(syncProcPtr->currentModePtr->receivedLines()<(syncProcPtr->currentModePtr->imageLines()*minCompletion)/100)
     {
-      endce = new endImageSSTVRXEvent("");
+      endce = new endImageSSTVRXEvent(NOTVALID); //indicate there  is no valid image
     }
   else
     {
-      endce = new endImageSSTVRXEvent(getSSTVModeNameShort(syncProcPtr->getMode()));
+//      endce = new endImageSSTVRXEvent(getSSTVModeNameShort(syncProcPtr->getMode()));
+      endce = new endImageSSTVRXEvent(syncProcPtr->getMode());
     }
   endce->waitFor(&done);
   QApplication::postEvent(dispatcherPtr, endce);

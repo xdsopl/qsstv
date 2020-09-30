@@ -55,8 +55,8 @@ private:
 	double txSamplingClock;
 	double oldAngle;
 	double sineTable[SINTABLEN];
-	const float *filterI;
-	unsigned int filterLength;
+//	const float *filterI;
+//	unsigned int filterLength;
   SOUNDFRAME filter(double sample);
   void write(double sample);
 	double sample;

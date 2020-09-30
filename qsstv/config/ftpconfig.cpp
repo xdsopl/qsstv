@@ -1,9 +1,32 @@
+/**************************************************************************
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
+*   on4qz@telenet.be                                                      *
+*   http://users.telenet.be/on4qz                                         *
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+*   This program is distributed in the hope that it will be useful,       *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+*   GNU General Public License for more details.                          *
+*                                                                         *
+*   You should have received a copy of the GNU General Public License     *
+*   along with this program; if not, write to the                         *
+*   Free Software Foundation, Inc.,                                       *
+*   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+***************************************************************************/
+
 #include "ftpconfig.h"
+#include "appglobal.h"
 #include "ui_ftpconfig.h"
-#include "ftp.h"
+#include "ftpfunctions.h"
 
 #include <QImageWriter>
 #include <QMessageBox>
+#include <QDebug>
 
 
 bool enableFTP;
@@ -16,6 +39,7 @@ QString ftpPassword;
 QString ftpDefaultImageFormat;
 eftpSaveFormat ftpSaveFormat;
 int ftpNumImages;
+bool addExtension;
 
 ftpConfig::ftpConfig(QWidget *parent) :  baseConfig (parent),  ui(new Ui::ftpConfig)
 {
@@ -47,7 +71,9 @@ void ftpConfig::readSettings()
   ftpDefaultImageFormat=qSettings.value("ftpDefaultImageFormat","png").toString();
   ftpSaveFormat=(eftpSaveFormat)qSettings.value("ftpSaveFormat",0).toInt();
   ftpNumImages=qSettings.value("ftpNumImages",30).toInt();
+  addExtension=qSettings.value("addExtension",false).toBool();
   qSettings.endGroup();
+
   setParams();
 }
 
@@ -66,6 +92,8 @@ void ftpConfig::writeSettings()
   qSettings.setValue("ftpDefaultImageFormat",ftpDefaultImageFormat);
   qSettings.setValue("ftpSaveFormat",(int)ftpSaveFormat);
   qSettings.setValue("ftpNumImages",ftpNumImages);
+  qSettings.setValue("addExtension",addExtension);
+
   qSettings.endGroup();
 }
 
@@ -91,13 +119,14 @@ void ftpConfig::getParams()
   getValue(ftpLogin,ui->ftpLoginLineEdit);
   getValue(ftpPassword,ui->ftpPasswordLineEdit);
   getValue(ftpDefaultImageFormat,ui->ftpDefaultImageFormatComboBox);
+  getValue(addExtension,ui->addExtensionCheckBox);
   if(ui->imageRadioButton->isChecked())
     {
-      ftpSaveFormat=FTPIM;
+      ftpSaveFormat=FTPIMAGESEQUENCE;
     }
   else
     {
-      ftpSaveFormat=FTPFILE;
+      ftpSaveFormat=FTPFILENAME;
     }
   changed=false;
   if(enableFTPCopy!=enableFTP
@@ -122,7 +151,7 @@ void ftpConfig::setParams()
   setValue(ftpRemoteDRMDirectory,ui->remoteDRMDirectoryLineEdit);
   setValue(ftpLogin,ui->ftpLoginLineEdit);
   setValue(ftpPassword,ui->ftpPasswordLineEdit);
-  if(ftpSaveFormat==FTPIM)
+  if(ftpSaveFormat==FTPIMAGESEQUENCE)
     {
       ui->imageRadioButton->setChecked(true);
     }
@@ -131,23 +160,31 @@ void ftpConfig::setParams()
       ui->filenameRadioButton->setChecked(true);
     }
   setValue(ftpDefaultImageFormat,ui->ftpDefaultImageFormatComboBox);
+  setValue(addExtension,ui->addExtensionCheckBox);
 }
 
 
 void ftpConfig::slotTestFTPPushButton()
 {
-  QString r1,r2;
+  eftpError result;
+  ftpFunctions ff;
+  QString resultSSTVStr;
+  QString resultDRMStr;
   QApplication::setOverrideCursor(Qt::WaitCursor);
-  ftpInterface fInt("TestUploadConnection");
   ui->testFTPPushButton->setDisabled(true);
   getParams();
-  fInt.setupConnection(ftpRemoteHost,ftpPort,ftpLogin,ftpPassword,ftpRemoteSSTVDirectory);
-  r1=fInt.execFTPTest();
-  fInt.init();
-  fInt.setupConnection(ftpRemoteHost,ftpPort,ftpLogin,ftpPassword,ftpRemoteDRMDirectory);
-  r2=fInt.execFTPTest();
+  ff.test("Ftp Test sstvdir",ftpRemoteHost,ftpPort,ftpLogin,ftpPassword,ftpRemoteSSTVDirectory,true);
+  result=ff.getLastErrorStr(resultSSTVStr);
+
+
+  if(result==FTPOK)
+    {
+//      qDebug() << "secondTest()";
+      ff.test("Ftp Test drmdir",ftpRemoteHost,ftpPort,ftpLogin,ftpPassword,ftpRemoteDRMDirectory,false);
+      ff.getLastErrorStr(resultDRMStr);
+    }
   QApplication::restoreOverrideCursor();
   ui->testFTPPushButton->setDisabled(false);
-  QMessageBox::information(this,"Testing Connection","",QString("SSTV: %1\nDRM: %2").arg(r1).arg(r2));
+  QMessageBox::information(this,"FTP Site Test",resultSSTVStr+"\n"+resultDRMStr,QMessageBox::Ok);
 }
 

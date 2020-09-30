@@ -29,7 +29,7 @@
  *   your version.                                                         *
  ***************************************************************************/
 #include "scopeview.h"
-#include "utils/loggingparams.h"
+#include "loggingparams.h"
 
 
 
@@ -79,7 +79,9 @@ void scopeView::addData(ecurve Idx,double *data,unsigned int position,unsigned i
   if(position<xOffset) return;
   switch(Idx)
     {
-    case SCDATA1: ar=array1; break;
+    case SCDATA1:
+      ar=array1;
+      break;
     case SCDATA2: ar=array2; break;
     case SCDATA3: ar=array3; break;
     case SCDATA4: ar=array4; break;
@@ -234,7 +236,10 @@ void scopeView::addData(ecurve Idx,quint32 *data,unsigned int position,unsigned 
   if(position<xOffset) return;
   switch(Idx)
     {
-    case SCDATA1: ar=array1; break;
+    case SCDATA1:
+      ar=array1;
+      break;
+
     case SCDATA2: ar=array2; break;
     case SCDATA3: ar=array3; break;
     case SCDATA4: ar=array4; break;

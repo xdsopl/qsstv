@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -18,6 +18,7 @@
 *   Free Software Foundation, Inc.,                                       *
 *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 ***************************************************************************/
+
 #include "soundconfig.h"
 #include "ui_soundconfig.h"
 #include "configparams.h"

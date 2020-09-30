@@ -7,7 +7,6 @@
 #include "ftpconfig.h"
 #include "guiconfig.h"
 #include "hybridconfig.h"
-#include "hybridnotifyconfig.h"
 #include "operatorconfig.h"
 #include "repeaterconfig.h"
 #include "rigconfig.h"

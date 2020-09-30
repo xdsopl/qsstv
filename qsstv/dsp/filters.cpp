@@ -1,13 +1,14 @@
 #include "filters.h"
 #include "filter.h"
+#include "appglobal.h"
 
 #include <QDebug>
 
 
 
 syncFilter:: syncFilter(uint maxLength):
-  sync1200(filter::FTFIR,maxLength),sync1900(filter::FTFIR,maxLength),
-  vol1200(filter::FTFIR,maxLength),vol1900(filter::FTFIR,maxLength)
+  sync1200(filter::FTIIR,maxLength),sync1900(filter::FTIIR,maxLength),
+  sync1200lp(filter::FTFIR,maxLength),sync1900lp(filter::FTFIR,maxLength)
 {
   init();
 }
@@ -21,36 +22,45 @@ void syncFilter:: init()
 {
   // setup the syncFilters
   sync1200.init();
-  sync1200.setupMatchedFilter(1200,60);
+  sync1200.nZeroes=SYNCBPNUMZEROES;
+  sync1200.nPoles=SYNCBPNUMPOLES;
+  sync1200.gain=SYNCBP1200GAIN;
+  sync1200.coefZPtr=(FILTERPARAMTYPE *)z_sync_bp1200;
+  sync1200.coefPPtr=(FILTERPARAMTYPE *)p_sync_bp1200;
+  sync1200.allocate();
 
   sync1900.init();
-  sync1900.setupMatchedFilter(1900,60);
+  sync1900.nZeroes=SYNCBPNUMZEROES;
+  sync1900.nPoles=SYNCBPNUMPOLES;
+  sync1900.gain=SYNCBP1900GAIN;
+  sync1900.coefZPtr=(FILTERPARAMTYPE *)z_sync_bp1900;
+  sync1900.coefPPtr=(FILTERPARAMTYPE *)p_sync_bp1900;
+  sync1900.allocate();
 
-  vol1200.init();
-  vol1200.nZeroes=HILBERTTAPS-1;
-  vol1200.coefZPtr=(FILTERPARAMTYPE *)hilbertCoef;
-  vol1200.gain=HILBERTGAIN;
-  vol1200.volumeAttackIntegrator=0.07;
-  vol1200.volumeDecayIntegrator=0.05;
-  vol1200.allocate();
+  sync1200lp.init();
+  sync1200lp.nZeroes=SYNCLPTAPS;
+  sync1200lp.gain=SYNCLPGAIN;
+  sync1200lp.coefZPtr=(FILTERPARAMTYPE *)z_sync_lp;
+  sync1200lp.allocate();
 
-  vol1900.init();
-  vol1900.nZeroes=HILBERTTAPS-1;
-  vol1900.coefZPtr=(FILTERPARAMTYPE *)hilbertCoef;
-  vol1900.gain=HILBERTGAIN;
-  vol1900.volumeAttackIntegrator=0.07;
-  vol1900.volumeDecayIntegrator=0.05;
-  vol1900.allocate();
-  detect1200Ptr= vol1200.volumePtr;
-  detect1900Ptr= vol1900.volumePtr;
+  sync1900lp.init();
+  sync1900lp.nZeroes=SYNCLPTAPS;
+  sync1900lp.gain=SYNCLPGAIN;
+  sync1900lp.coefZPtr=(FILTERPARAMTYPE *)z_sync_lp;
+  sync1900lp.allocate();
+
+  detect1200Ptr= sync1200lp.filteredPtr;
+  detect1900Ptr= sync1900lp.filteredPtr;
 }
 
 void syncFilter::process(FILTERPARAMTYPE *dataPtr)
 {
-  sync1200.processFIR(dataPtr,sync1200.filteredPtr);
-  sync1900.processFIR(dataPtr,sync1900.filteredPtr);
-  vol1200.processHILBVolume(sync1200.filteredPtr);
-  vol1900.processHILBVolume(sync1900.filteredPtr);
+  sync1200.processIIRRectified(dataPtr);
+  sync1200lp.processFIR(sync1200.filteredPtr,sync1200lp.filteredPtr);
+#ifndef DISABLENARROW
+  sync1900.processIIRRectified(dataPtr);
+  sync1900lp.processFIR(sync1900.filteredPtr,sync1900lp.filteredPtr);
+#endif
 }
 
 
@@ -79,7 +89,6 @@ void videoFilter::init()
   videoFltr.coefZPtr=(FILTERPARAMTYPE *)videoFilterCoefFIR;
   videoFltr.allocate();
   demodPtr=videoFltr.demodPtr;
-
   lpFltr.setupMatchedFilter(0,1);
 }
 
@@ -94,7 +103,7 @@ void videoFilter::process(FILTERPARAMTYPE *dataPtr)
 
 wfFilter::wfFilter(uint maxLength):wfFltr(filter::FTFIR,maxLength)
 {
-   init();
+  init();
 }
 
 wfFilter::~wfFilter()
@@ -152,28 +161,5 @@ void drmHilbertFilter::process(FILTERPARAMTYPE *dataPtr, float *outputPtr,uint d
   drmFltr.processIQ(dataPtr,outputPtr);
 }
 
-//void drmHilbertFilter::processIQ(FILTERPARAMTYPE *data, FILTERPARAMTYPE *output,uint dataLength)
-//{
-//  length=dataLength;
-//  FILTERPARAMTYPE resQ=0;
-//  const FILTERPARAMTYPE *cf1;
-//  FILTERPARAMTYPE *fp1;
-//  unsigned int i;
-//  uint k;
-//  for (k=0;k<length;k++)
-//    {
-//      resQ=0;
-//      cf1 = hilbCoef;
-//      fp1 = sampleBufferI;
-//      memmove(sampleBufferI+1, sampleBufferI,sizeof(FILTERPARAMTYPE)); // newest at index 0
-//      sampleBufferI[0]=data[k];
-//      for(i=0;i<hilbTaps;i++,fp1++,cf1++)
-//        {
-//          resQ+=(*fp1)*(*cf1);
-//        }
-//      output[2*k+1]=sampleBufferI[hilbTaps/2]; // just delay
-//      output[2*k]=(FILTERPARAMTYPE)resQ;
-//    }
-//}
 
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2012 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -22,9 +22,12 @@
 #include "wavio.h"
 #include "appglobal.h"
 #include "configparams.h"
-#include "utils/dirdialog.h"
+#include "dirdialog.h"
 #include "unistd.h"
 #include <qfiledialog.h>
+#include "dispatcher.h"
+
+#include <errno.h>
 
 /**
   constructor: creates a waveIO instance
@@ -45,6 +48,11 @@ wavIO::~wavIO()
 
 void wavIO::closeFile()
 {
+  if(inopf.isOpen() && writing)
+    {
+      inopf.flush();
+      writeHeader();
+    }
   inopf.close();
   reading=false;
   writing=false;
@@ -60,13 +68,14 @@ void wavIO::closeFile()
 
 bool  wavIO::openFileForRead(QString fname,bool ask)
 {
+  displayMBoxEvent *stmb;
   QString tmp;
 
   if (ask)
     {
       dirDialog d((QWidget *)mainWindowPtr,"Wave file");
       QString s=d.openFileName(audioPath,"*");
-      if (s==QString::null) return false;
+      if (s.isNull()) return false;
       if (s.isEmpty()) return false;
       inopf.setFileName(s);
     }
@@ -76,11 +85,15 @@ bool  wavIO::openFileForRead(QString fname,bool ask)
     }
   if(!inopf.open(QIODevice::ReadOnly))
     {
+      stmb= new displayMBoxEvent("WAVIO Error", QString("Unable to open file %1\nError: %2").arg(fname).arg(strerror(errno)));
+      QApplication::postEvent( dispatcherPtr, stmb );
       return false;
     }
   reading=true;
   if(inopf.read(&waveHeader.chunkID[0],sizeof(sWave))!=sizeof(sWave))
     {
+      stmb= new displayMBoxEvent("WAVIO Error", QString("Invalid format"));
+      QApplication::postEvent( dispatcherPtr, stmb );
       closeFile();
       return false;
     }
@@ -92,7 +105,9 @@ bool  wavIO::openFileForRead(QString fname,bool ask)
        ||(!checkString(waveHeader.subChunk1ID,"fmt "))
        ||(!checkString(waveHeader.subChunk2ID,"data")))
     {
-      addToLog("wavio read header error",LOGALL);
+      addToLogDebug("wavio read header error",LOGALL);
+      stmb= new displayMBoxEvent("WAVIO Error", QString("Invalid Header Format"));
+      QApplication::postEvent( dispatcherPtr, stmb );
       closeFile();
       return false;
     }
@@ -105,12 +120,22 @@ bool  wavIO::openFileForRead(QString fname,bool ask)
       ||(waveHeader.blockAlign!=waveHeader.numChannels*2)
       ||(waveHeader.bitsPerSample!=16))
     {
-      addToLog("wavio read header error, not supported",LOGALL);
+      addToLogDebug("wavio read header error, not supported",LOGALL);
+      stmb= new displayMBoxEvent("WAVIO Error", QString("Format not supported"));
+      QApplication::postEvent( dispatcherPtr, stmb );
       closeFile();
       return false;
     }
   numberOfChannels=waveHeader.numChannels;
   numberOfSamples=waveHeader.subChunk2Size/(2*numberOfChannels);  // number of mono or stereo samples
+  if(numberOfSamples==0)
+    {
+      addToLogDebug("wavio read header : number of samples = 0",LOGALL);
+      stmb= new displayMBoxEvent("WAVIO Error", QString("Number of samples  is zero"));
+      QApplication::postEvent( dispatcherPtr, stmb );
+      closeFile();
+      return false;
+    }
   samplesRead=0;
   return true;
 }
@@ -134,7 +159,7 @@ int  wavIO::read(short int *dPtr ,uint numSamples)
 
   if(!inopf.isOpen())
     {
-      addToLog("wavio not open during read",LOGALL);
+      addToLogDebug("wavio not open during read",LOGALL);
       return -1;
     }
 
@@ -154,8 +179,14 @@ int  wavIO::read(short int *dPtr ,uint numSamples)
       delete [] tempBuf;
 
     }
-  if(result==0) inopf.close();
+
+  if((result==0) || (numberOfSamples==samplesRead))
+    {
+      result=0;
+      inopf.close();
+    }
   samplesRead+=result/(sizeof(quint16)*numberOfChannels);
+
   return result/(sizeof(quint16)*numberOfChannels);
 }
 
@@ -164,6 +195,7 @@ int  wavIO::read(short int *dPtr ,uint numSamples)
    opens a wave file for writing
   \param fname the name of the file to open
   \param ask if ask==true, a filedialog will be opened
+  \param isStereo false if mono,true if stereo
   \return true if the file is succcesfully opened, and the header written, false otherwise?
   \sa write
 */
@@ -175,7 +207,9 @@ bool  wavIO::openFileForWrite(QString fname,bool ask,bool isStereo)
     {
       dirDialog d((QWidget *)mainWindowPtr,"wave IO");
       QString fn=d.saveFileName(audioPath,"*.wav","wav");
+      if(fn.isEmpty()) return false;
       inopf.setFileName(fn);
+
     }
   else
     {
@@ -203,10 +237,11 @@ bool  wavIO::openFileForWrite(QString fname,bool ask,bool isStereo)
   To signal the end, call this function with numSamples=0. The file will automatically be closed.
   \param dPtr pointer to buffer for 16 bit samples SOUNDFRAME indicates if samples are mono or stereo
   \param numSamples  number of samples to read
+  \param isStereo false if mono,true if stereo
   \return returns true the correct number of samples are written. false otherwise.
 */
 
-bool  wavIO::write(quint16 *dPtr, uint numSamples)
+bool  wavIO::write(quint16 *dPtr, uint numSamples,bool isStereo)
 {
   uint i;
   int len;
@@ -220,7 +255,7 @@ bool  wavIO::write(quint16 *dPtr, uint numSamples)
 
   if((!writing)&&(numSamples!=0))
     {
-      addToLog("wavio not open during write",LOGALL);
+      addToLogDebug("wavio not open during write",LOGALL);
       return true;
     }
   if((!writing)&&(numSamples==0)) return true;
@@ -235,17 +270,30 @@ bool  wavIO::write(quint16 *dPtr, uint numSamples)
 
   // we need stereo output and input is mono
 
-  tempBufPtr=new quint16 [numSamples*2];
-  tmpPtr=tempBufPtr;
-  for(i=0;i<numSamples;i++)
+
+  if(!isStereo)
     {
-      tempBufPtr[i*2]=dPtr[i];
-      tempBufPtr[i*2+1]=0;
+      tempBufPtr=new quint16 [numSamples*2];
+      tmpPtr=tempBufPtr;
+      for(i=0;i<numSamples;i++)
+        {
+          tempBufPtr[i*2]=dPtr[i];
+          tempBufPtr[i*2+1]=0;
+        }
+    }
+  else
+    {
+      tempBufPtr=new quint16 [numSamples*2];
+      tmpPtr=tempBufPtr;
+      for(i=0;i<numSamples*2;i++)
+        {
+          tempBufPtr[i]=dPtr[i];
+        }
     }
 
   if(inopf.write((char *)tmpPtr,len)!=len)
     {
-      addToLog("wavio write error",LOGALL);
+      addToLogDebug("wavio write error",LOGALL);
       closeFile();
       if(tempBufPtr) delete []tempBufPtr;
       return false;
@@ -289,8 +337,8 @@ void wavIO::initHeader()
   waveHeader.byteRate=sizeof(SOUNDFRAME)*samplingrate;    // 16 bit samples
   waveHeader.blockAlign=4;
   waveHeader.bitsPerSample=16;
-  waveHeader.chunkSize=36+numberOfSamples*sizeof(short int);
   waveHeader.subChunk2Size=numberOfSamples*sizeof(short int);
+  waveHeader.chunkSize=36+numberOfSamples*sizeof(short int);
 }
 
 bool  wavIO::checkString(char *str,const char *cstr)

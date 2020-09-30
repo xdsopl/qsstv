@@ -12,12 +12,6 @@
 #define DRMNUMMODES 4
 
 
-//original
-//#define SNR_TIMEOUT 3
-//#define FAC_NOT_VALID 4
-//#define SNR_MIN_DB 5
-//#define FAC_NOT_VALID_TIMEOUT 4
-
 extern int Ts_list[DRMNUMMODES];
 extern int Tu_list[DRMNUMMODES];
 extern int Tg_list[DRMNUMMODES];

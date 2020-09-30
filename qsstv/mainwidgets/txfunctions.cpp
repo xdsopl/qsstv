@@ -22,14 +22,14 @@
 #include "txfunctions.h"
 #include "appglobal.h"
 #include "sstv/sstvtx.h"
-#include "sstv/cw.h"
+#include "cw.h"
 
 
 #include "configparams.h"
 #include <qmutex.h>
-#include "dsp/synthes.h"
-#include "sstv/modes/modes.h"
-#include "dispatch/dispatcher.h"
+#include "synthes.h"
+#include "modes/modes.h"
+#include "dispatcher.h"
 #include "cw.h"
 #include <QApplication>
 #include <assert.h>
@@ -57,7 +57,8 @@ const QString txStateStr[txFunctions::TXTEST+1]=
   "IDLE",
   "ACTIVE",
   "SENDTONE",
-  "SENDID",
+  "SENDWFID",
+  "SENDCWID",
   "SENDDRM",
   "SENDDRMPIC",
   "SENDDRMBINARY",
@@ -68,7 +69,7 @@ const QString txStateStr[txFunctions::TXTEST+1]=
   "SSTVPOST",
   "RESTART",
   "PREPARESSTV",
-  "PREPAREDRM",
+  "PREPAREDRMPIC",
   "PREPAREDRMBINARY",
   "TXTEST"
 };
@@ -117,10 +118,10 @@ void txFunctions::run()
         {
         case TXIDLE:
           msleep(10);
-        break;
+          break;
         case TXACTIVE:
           msleep(1);
-        break;
+          break;
         case TXSENDTONE:
           waitTxOn();
           addToLog("txFunc: entered TXSENDTONE",LOGTXFUNC);
@@ -129,7 +130,7 @@ void txFunctions::run()
           addToLog("txFunc: TXSENDTONE waiting for end",LOGTXFUNC);
           waitEnd();
           switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXPREPAREDRMBINARY:
           {
@@ -139,7 +140,7 @@ void txFunctions::run()
             switchTxState(TXIDLE);
             prepareTXComplete(ok);
           }
-        break;
+          break;
         case TXPREPAREDRMPIC:
           {
             bool ok=true;
@@ -148,11 +149,20 @@ void txFunctions::run()
             switchTxState(TXIDLE);
             prepareTXComplete(ok);
           }
-        break;
+          break;
 
         case TXSENDDRMPIC:
-          startWFTxt = startPicWF;
-          endWFTxt   = endPicWF;
+          if(repeaterEnabled)
+            {
+              startWFTxt = startRepeaterWF;
+              endWFTxt   = endRepeaterWF;
+            }
+          else
+            {
+              startWFTxt = startPicWF;
+              endWFTxt   = endPicWF;
+            }
+
           if (drmTxPtr->initDRMImage(false,""))
             {
               drmTxPtr->updateTxList();
@@ -160,7 +170,7 @@ void txFunctions::run()
             }
           else
             switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXSENDDRMBINARY:
           startWFTxt = startBinWF;
@@ -172,19 +182,19 @@ void txFunctions::run()
             }
           else
             switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXSENDDRMBSR:
           startWFTxt = bsrWF;
           endWFTxt   = "";
           switchTxState(TXSENDDRM);
-        break;
+          break;
 
         case TXSENDDRMFIX:
           startWFTxt = fixWF;
           endWFTxt   = "";
           switchTxState(TXSENDDRM);
-        break;
+          break;
 
         case TXSENDDRM:
           waitTxOn();
@@ -210,11 +220,11 @@ void txFunctions::run()
               waitEnd();
             }
           switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXSENDDRMTXT:
           waitTxOn();
-        break;
+          break;
 
         case TXSENDWFID:
           addToLog("Entered TXSENDID",LOGTXFUNC);
@@ -227,7 +237,7 @@ void txFunctions::run()
           waitEnd();
           addToLog("TXSENDID  end",LOGTXFUNC);
           switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXSENDCWID:
           waitTxOn();
@@ -235,12 +245,12 @@ void txFunctions::run()
           sendCW();
           waitEnd();
           switchTxState(TXIDLE);
-        break;
+          break;
 
         case TXPREPARESSTV:
           switchTxState(TXIDLE);
           prepareTXComplete(true);
-        break;
+          break;
 
         case TXSSTVIMAGE:
           waitTxOn();
@@ -255,7 +265,7 @@ void txFunctions::run()
             {
               switchTxState(TXIDLE);
             }
-        break;
+          break;
         case TXSSTVPOST:
           addToLog("Entered TXSSTVPOST ",LOGTXFUNC);
           if (useCW)
@@ -268,13 +278,13 @@ void txFunctions::run()
             }
           waitEnd();
           switchTxState(TXRESTART);
-        break;
+          break;
         case TXRESTART:
           switchTxState(TXIDLE);
-        break;
+          break;
         case TXTEST:
           sendTestPattern();
-        break;
+          break;
 
         }
     }
@@ -284,29 +294,31 @@ void txFunctions::run()
   txState=TXIDLE;
 }
 
-void txFunctions::setOnlineStatus(bool online, QString info)
-{
-  drmTxPtr->setOnlineStatus(online, info);
-}
-
-void txFunctions::who()
-{
-  drmTxPtr->who();
-}
-
 int txFunctions::calcTxTime(bool binary, int overhead)
 {
   bool ok=false;
   int txTime=0;
-  if (binary) {
+  if(transmissionModeIndex==TRXSSTV)
+    {
+      txTime=sstvTxPtr->calcTxTime(0);
+    }
+  else
+    {
+  if (binary)
+    {
       ok=drmTxPtr->initDRMImage(true, binaryFilename);
     }
-  else {
+  else
+    {
       ok=drmTxPtr->initDRMImage(false, "");
     }
   if (ok) txTime = drmTxPtr->calcTxTime(overhead);
   addToLog(QString("ok=%1, time=%2").arg(ok).arg(txTime), LOGTXFUNC);
+}
   return txTime;
+
+
+
 }
 
 void txFunctions::setDRMTxParams(drmTxParams params)
@@ -355,23 +367,28 @@ void txFunctions::prepareTXComplete(bool ok)
 
 void txFunctions::prepareTX(etxState state)
 {
-  if (txState != TXIDLE) {
+  if (txState != TXIDLE)
+    {
       addToLog("txState is not TXIDLE",LOGTXFUNC);
       return;
     }
 
-  switch (state) {
+  switch (state)
+    {
     case TXPREPARESSTV:
-    case TXSSTVIMAGE:    switchTxState(TXPREPARESSTV);
-    break;
+    case TXSSTVIMAGE:
+      switchTxState(TXPREPARESSTV);
+      break;
 
     case TXPREPAREDRMPIC:
-    case TXSENDDRMPIC:   switchTxState(TXPREPAREDRMPIC);
-    break;
+    case TXSENDDRMPIC:
+      switchTxState(TXPREPAREDRMPIC);
+      break;
 
     case TXPREPAREDRMBINARY:
-    case TXSENDDRMBINARY:switchTxState(TXPREPAREDRMBINARY);
-    break;
+    case TXSENDDRMBINARY:
+      switchTxState(TXPREPAREDRMBINARY);
+      break;
 
     default:
       addToLog(QString("Invalid prepareTX state:%1").arg(state),LOGTXFUNC);

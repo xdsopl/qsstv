@@ -15,7 +15,7 @@ public:
   void processFIR(FILTERPARAMTYPE *dataPtr,FILTERPARAMTYPE *dataOutputPtr);
   void processFIRInt(FILTERPARAMTYPE *dataPtr, quint16 *dataOutputPtr);
   void processFIRDemod(FILTERPARAMTYPE *dataPtr, FILTERPARAMTYPE *dataOutputPtr);
-  void processIIR(FILTERPARAMTYPE *dataPtr);
+  void processIIRRectified(FILTERPARAMTYPE *dataPtr);
   void processHILBVolume(FILTERPARAMTYPE *dataPtr);
   void processIQ(FILTERPARAMTYPE *dataPtr,float *dataOutputPtr);
   void setupMatchedFilter(FILTERPARAMTYPE freq, uint numTaps);
@@ -34,6 +34,7 @@ public:
   uint dataLen;
   int fltrIndex;
   unsigned int coefIndex;
+  bool coefZPtrNewed;
 
 private:
 
@@ -50,7 +51,7 @@ private:
   FILTERPARAMTYPE resQprev;
 
   FILTERPARAMTYPE angleToFc;
-  FILTERPARAMTYPE avgVolume;
+//  FILTERPARAMTYPE avgVolume;
   FILTERPARAMTYPE prevTemp;
 
   NCO nco;

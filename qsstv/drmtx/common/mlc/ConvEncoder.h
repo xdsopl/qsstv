@@ -31,7 +31,7 @@
 
 #include "../GlobalDefinitions.h"
 #include "../tables/TableMLC.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../Parameter.h"
 #include "ChannelCode.h"
 

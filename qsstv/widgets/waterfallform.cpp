@@ -1,7 +1,7 @@
 #include "waterfallform.h"
 #include "ui_waterfallform.h"
 #include "appglobal.h"
-#include "sound/waterfalltext.h"
+#include "waterfalltext.h"
 
 
 waterfallForm::waterfallForm(QWidget *parent) :

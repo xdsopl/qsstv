@@ -46,6 +46,8 @@
 #include "qurlinfo.h"
 #include <QtCore/qobject.h>
 
+/** @file */
+
 QT_BEGIN_HEADER
 
 class QFtpPrivate;
@@ -58,15 +60,20 @@ public:
     explicit QFtp(QObject *parent = 0);
     virtual ~QFtp();
 
-    enum State {
+    enum State
+    {
         Unconnected,
+        NetworkError,
         HostLookup,
         Connecting,
         Connected,
         LoggedIn,
         Closing
     };
-    enum Error {
+
+
+    enum Error
+    {
         NoError,
         UnknownError,
         HostNotFound,

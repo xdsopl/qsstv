@@ -16,6 +16,9 @@ using namespace std; /* Because of the library: "complex" */
 #define DOWNSAMPLESIZE (SUBSAMPLINGFACTOR*RXSTRIPE)
 #define SAMPLERATE (BASESAMPLERATE/SUBSAMPLINGFACTOR)
 
+
+#undef DISABLENARROW
+
 typedef double DSPFLOAT;
 typedef unsigned char byte;
 

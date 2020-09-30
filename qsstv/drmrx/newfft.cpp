@@ -137,7 +137,7 @@ void cfft(float *buf, int N2, int forward)
   float rtemp, itemp;
   int i, j, m;
   float scale;
-  register float *bi, *be;
+  float *bi, *be;
 
   bitreverse(buf, ND);
   for (mmax = 2; mmax < ND; mmax = delta)

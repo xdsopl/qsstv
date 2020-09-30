@@ -30,6 +30,8 @@
  ***************************************************************************/
 #include "moderobot1.h"
 
+// used by Robot36
+
 modeRobot1::modeRobot1(esstvMode m,unsigned int len, bool tx,bool narrowMode):modeBase(m,len,tx,narrowMode)
 {
 }
@@ -46,12 +48,13 @@ void modeRobot1::setupParams(double clock)
 
 modeBase::embState modeRobot1::rxSetupLine()
 {
+  if(lineCounter>=activeSSTVParam->numberOfDataLines) return MBENDOFLINE;
+  start=lineTimeTableRX[lineCounter];
 
   switch(subLine)
     {
     case 0:
       debugState=stBP;
-      start=lineTimeTableRX[lineCounter];
       markerFloat=start+bp;
       marker=(unsigned int)round(markerFloat);
       return MBRXWAIT;
@@ -68,6 +71,7 @@ modeBase::embState modeRobot1::rxSetupLine()
       avgFreqGapCounter=0;
       markerFloat+=((blank/3)*2);
       marker=(unsigned int)round(markerFloat);
+      addToLog(QString("MB1500: marker %1 line:%2").arg(marker).arg(lineCounter),LOGMODES);
       return MB1500;
     case 3:
       debugState=stG1a;
@@ -112,6 +116,7 @@ modeBase::embState modeRobot1::rxSetupLine()
       avgFreqGapCounter=0;
       markerFloat+=((blank/3)*2);
       marker=(unsigned int)round(markerFloat);
+      addToLog(QString("MB2300: marker %1 line: %2").arg(marker).arg(lineCounter),LOGMODES);
       return MB2300;
     case 10:
       debugState=stG2a;
@@ -144,14 +149,10 @@ modeBase::embState modeRobot1::rxSetupLine()
 void modeRobot1::showLine()
 {
   yuvConversion(yArrayPtr);
+  addToLog(QString("displayCounter %1 lineCounter:%2").arg(displayLineCounter).arg(lineCounter),LOGMODES);
   yuvConversion(greenArrayPtr);
+  addToLog(QString("displayCounter %1 lineCounter:%2").arg(displayLineCounter).arg(lineCounter),LOGMODES);
 }
-
-//unsigned long modeRobot1::adjustSyncPosition(unsigned long syncPos0)
-//  {
-//  if(syncPos0<lineTimeTableRX[1]-35) return syncPos0-35;
-//  return syncPos0-lineTimeTableRX[1]+35;
-//  }
 
 
 void modeRobot1::calcPixelPositionTable(unsigned int colorLine,bool tx)
@@ -159,33 +160,46 @@ void modeRobot1::calcPixelPositionTable(unsigned int colorLine,bool tx)
   unsigned int i;
   int ofx=0;
   if(tx) ofx=1;
-//  DSPFLOAT lineStart=start; // todo check lineStart
-  //  double start;
-  //  if(tx) start=lineTimeTableTX[lineCounter];
-  //  else start=lineTimeTableRX[lineCounter];
-  //	debugState=colorLine;
+  DSPFLOAT lineStart=start;
   switch (colorLine)
     {
     case YLINEODD:
     case YLINEEVEN:
+      lineStart+=bp;
       for(i=0;i<activeSSTVParam->numberOfPixels;i++)
         {
-          pixelPositionTable[i]=(unsigned int)round(markerFloat+(((float)(i+ofx)*visibleLineLength*2)/activeSSTVParam->numberOfPixels));
+//          pixelPositionTable[i]=(unsigned int)round(markerFloat+(((float)(i+ofx)*visibleLineLength*2)/activeSSTVParam->numberOfPixels));
+          pixelPositionTable[i]=(unsigned int)round(lineStart+(((float)(i+ofx)*2*visibleLineLength)/activeSSTVParam->numberOfPixels));
         }
       break;
     case REDLINE:
     case BLUELINE:
+      lineStart+=bp+blank+visibleLineLength*2;
       for(i=0;i<activeSSTVParam->numberOfPixels;i++)
         {
-          pixelPositionTable[i]=(unsigned int)round(markerFloat+(((float)(i+ofx)*visibleLineLength)/activeSSTVParam->numberOfPixels));
+//          pixelPositionTable[i]=(unsigned int)round(markerFloat+(((float)(i+ofx)*visibleLineLength)/activeSSTVParam->numberOfPixels));
+          pixelPositionTable[i]=(unsigned int)round(lineStart+(((float)(i+ofx)*visibleLineLength)/activeSSTVParam->numberOfPixels));
         }
       break;
     }
 }
 
-/**
-  \todo resync odd/even line via frequency detection
-*/
+// send:
+// 0 - YLine odd
+// 1 - 1500 Hz
+// 2 - 1900 Hz
+// 3 - Red Line
+// 4 - fp (1500 Hz)
+// 5 - sync (1200 Hz)
+// 6 - bp (1500 Hz)
+// 7 - YLine even
+// 8 - 2300 Hz
+// 9 - 1900 Hz
+//10 - Red Line
+//11 - fp (1500 Hz)
+//12 - sync (1200 Hz)
+//13 - bp (1500 Hz)
+
 
 modeBase::embState modeRobot1::txSetupLine()
 {
@@ -193,12 +207,11 @@ modeBase::embState modeRobot1::txSetupLine()
   switch(subLine)
     {
     case 0:
-      markerFloat=start+bp;
       calcPixelPositionTable(YLINEODD,true);
       pixelArrayPtr=yArrayPtr;
       return MBPIXELS;
     case 1:
-      txFreq=lowerFreq;
+      txFreq=lowerFreq; // 1500 Hz for ROobot 36
       txDur=(unsigned int)rint((2*blank)/3);
       return MBTXGAP;
     case 2:
@@ -215,7 +228,6 @@ modeBase::embState modeRobot1::txSetupLine()
       return MBTXGAP;
     case 5:
       txFreq=syncFreq;
-      lineCounter++;
       txDur=(unsigned int)rint(syncDuration);
       return MBTXGAP;
     case 6:
@@ -224,9 +236,8 @@ modeBase::embState modeRobot1::txSetupLine()
       lineCounter++;
       return MBTXGAP;
     case 7:
-      markerFloat=start+bp;
       calcPixelPositionTable(YLINEEVEN,true);
-      pixelArrayPtr=greenArrayPtr;
+      pixelArrayPtr=yArrayPtr;
       return MBPIXELS;
     case 8:
       txFreq=2300.;

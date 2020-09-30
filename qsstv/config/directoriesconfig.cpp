@@ -1,3 +1,24 @@
+/**************************************************************************
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
+*   on4qz@telenet.be                                                      *
+*   http://users.telenet.be/on4qz                                         *
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+*   This program is distributed in the hope that it will be useful,       *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+*   GNU General Public License for more details.                          *
+*                                                                         *
+*   You should have received a copy of the GNU General Public License     *
+*   along with this program; if not, write to the                         *
+*   Free Software Foundation, Inc.,                                       *
+*   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+***************************************************************************/
+
 #include "directoriesconfig.h"
 #include "ui_directoriesconfig.h"
 
@@ -39,10 +60,10 @@ void directoriesConfig::readSettings()
   rxSSTVImagesPath=qSettings.value("rxSSTVImagesPath",QString(getenv("HOME"))+"/qsstv/rx_sstv/").toString();
   rxDRMImagesPath=qSettings.value("rxDRMImagesPath",QString(getenv("HOME"))+"/qsstv/rx_drm/").toString();
   txSSTVImagesPath=qSettings.value("txSSTVImagesPath",QString(getenv("HOME"))+"/qsstv/tx_sstv/").toString();
-  txDRMImagesPath=qSettings.value("txDRMImagesPath",QString(getenv("HOME"))+"/tx_drm/").toString();
-  txStockImagesPath=qSettings.value("txStockImagesPath",QString(getenv("HOME"))+"/tx_stock/").toString();
-  templatesPath=qSettings.value("templatesPath",QString(getenv("HOME"))+"/templates/").toString();
-  audioPath=qSettings.value("audioPath",QString(getenv("HOME"))+"/audio/").toString();
+  txDRMImagesPath=qSettings.value("txDRMImagesPath",QString(getenv("HOME"))+"/qsstv/tx_drm/").toString();
+  txStockImagesPath=qSettings.value("txStockImagesPath",QString(getenv("HOME"))+"/qsstv/tx_stock/").toString();
+  templatesPath=qSettings.value("templatesPath",QString(getenv("HOME"))+"/qsstv/templates/").toString();
+  audioPath=qSettings.value("audioPath",QString(getenv("HOME"))+"/qsstv/audio/").toString();
   docURL=qSettings.value("docURL","http://users.telenet.be/on4qz/qsstv/manual").toString();
   saveTXimages=qSettings.value("saveTXimages",false).toBool();
   qSettings.endGroup();

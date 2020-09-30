@@ -73,6 +73,7 @@ extern float channel_transfer_function_buffer[82980]; /* complex */
 extern int transmission_frame_buffer_wptr;
 extern int lFAC;
 extern float cpsd[513], psd[513];
+extern bool drmBusy;
 
 //Display * display;
 extern int runstate;

@@ -1,6 +1,6 @@
 #ifndef DRMPROFILECONFIG_H
 #define DRMPROFILECONFIG_H
-#include "drmtx/drmparams.h"
+#include "drmparams.h"
 
 
 #include "baseconfig.h"

@@ -171,7 +171,7 @@
    <item>
     <widget class="QLabel" name="label_3">
      <property name="text">
-      <string>Exit and restart QSSTV If slow CPU or Low Resolution has changed.</string>
+      <string>Exit and restart QSSTV If slow CPU or Low Resolution have changed.</string>
      </property>
     </widget>
    </item>
@@ -246,6 +246,20 @@
       </widget>
      </item>
     </layout>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="confirmDeletionCheckBox">
+     <property name="text">
+      <string>Ask for confirmation when deleting file </string>
+     </property>
+    </widget>
+   </item>
+   <item>
+    <widget class="QCheckBox" name="confirmCloseCheckBox">
+     <property name="text">
+      <string>Ask for confirmation when closing QSSTV</string>
+     </property>
+    </widget>
    </item>
    <item>
     <spacer name="verticalSpacer">

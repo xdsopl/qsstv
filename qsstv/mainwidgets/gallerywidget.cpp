@@ -1,7 +1,7 @@
 #include "gallerywidget.h"
 #include "ui_gallerywidget.h"
 #include "configparams.h"
-#include "utils/logging.h"
+#include "logging.h"
 #include "appglobal.h"
 #include <QSplashScreen>
 #include "dispatch/dispatcher.h"

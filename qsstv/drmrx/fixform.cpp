@@ -2,7 +2,7 @@
 #include "ui_fixform.h"
 #include "drmstatusframe.h"
 #include "appglobal.h"
-#include "drmrx/drm.h"
+#include "drm.h"
 #include "configparams.h"
 
 
@@ -25,12 +25,12 @@ void fixForm::setInfoInternal(int mode, QString fileName, int missing, QByteArra
   ui->previewWidget->openImage(ba);
 }
 
-void fixForm::setInfoExternal(int mode, QString fileName, int missing)
-{
-  common(mode,fileName,missing);
-  ui->infoTextEdit->appendPlainText("BSR for a picture you received");
-  ui->previewWidget->openImage(fileName,false,false,false);
-}
+//void fixForm::setInfoExternal(int mode, QString fileName, int missing)
+//{
+//  common(mode,fileName,missing);
+//  ui->infoTextEdit->appendPlainText("BSR for a picture you received");
+//  ui->previewWidget->openImage(fileName,false,false,false);
+//}
 
 void fixForm::common(int mode,QString fileName,int missing)
 {

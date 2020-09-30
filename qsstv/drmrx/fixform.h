@@ -15,7 +15,7 @@ public:
   explicit fixForm(QWidget *parent = 0);
   ~fixForm();
   void setInfoInternal(int mode, QString fileName, int missing, QByteArray *ba);
-  void setInfoExternal(int mode, QString fileName, int missing);
+//  void setInfoExternal(int mode, QString fileName, int missing);
   
 private:
   Ui::fixForm *ui;

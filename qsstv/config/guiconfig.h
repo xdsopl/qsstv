@@ -12,6 +12,8 @@ extern QColor backGroundColor;
 extern QColor imageBackGroundColor;
 extern bool slowCPU;
 extern bool lowRes;
+extern bool confirmDeletion;
+extern bool confirmClose;
 
 namespace Ui
 {

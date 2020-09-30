@@ -39,7 +39,7 @@
 #include "drmproto.h"
 #include "drmdefs.h"
 #include "appglobal.h"
-#include "utils/supportfunctions.h"
+#include "supportfunctions.h"
 
 static /*@only@ */ float *in_, *abs_in_, *abs_in_in_;
 static /*@only@ */ float *conv_in_, *conv_abs_in_in_;

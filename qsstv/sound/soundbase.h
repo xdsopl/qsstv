@@ -40,6 +40,7 @@ public:
   enum ecaptureState{CPINIT,CPSTARTING,CPRUNNING,CPCALIBRATESTART,CPCALIBRATEWAIT,CPCALIBRATE,CPEND};
 
   explicit soundBase(QObject *parent = 0);
+  ~soundBase();
   virtual bool init(int samplerate)=0;
   void run();
   void idleRX();
@@ -50,10 +51,10 @@ public:
   bool startCapture();
   bool startPlayback();
   buffer<FILTERPARAMTYPE,BYTESPOWER> rxBuffer;
-  buffer<unsigned int,BYTESPOWER> rxVolumeBuffer;
+  buffer<FILTERPARAMTYPE,BYTESPOWER> rxVolumeBuffer;
   buffer<SOUNDFRAME,16> txBuffer;
   double getVolumeDb(){return volume;}
-  uint *getVolumePtr() {return downsampleFilterPtr->getVolumePtr();}
+  FILTERPARAMTYPE *getVolumePtr() {return downsampleFilterPtr->getVolumePtr();}
   const QString getLastError() { return lastErrorStr;}
   bool isPlaying() {return playbackState!=PBINIT;}
   bool isCapturing() {return captureState!=CPINIT;}
@@ -94,6 +95,7 @@ protected:
   void errorHandler(QString title,QString info);
   void switchCaptureState(ecaptureState cs);
   void switchPlaybackState(eplaybackState ps);
+
 
 
 private:

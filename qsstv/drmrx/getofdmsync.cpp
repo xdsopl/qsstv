@@ -32,7 +32,7 @@
 #include <fftw3.h>
 #include "drmproto.h"
 #include "appglobal.h"
-#include "utils/supportfunctions.h"
+#include "supportfunctions.h"
 
 extern int FREQ_SYNC_ENABLE;
 

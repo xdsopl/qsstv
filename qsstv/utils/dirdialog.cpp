@@ -16,12 +16,11 @@ dirDialog::~dirDialog()
 
 
 /*!
-    \fn dirDialog::openFileName(const QString &path, const QString &filter, bool single)
+    \fn dirDialog::openFileName(const QString &path, const QString &filter)
     \brief selection of a file
 
     \param path  directory to open (preselected) if empty, the last accessed directory will be used
     \param filter  types to select from (e.g. mydirs*)
-    \param single  allows selection of more than one file if true
     \return if canceled or no selection then returns an empty string else return string containing absolute filename
 */
 
@@ -48,12 +47,10 @@ QString dirDialog::openFileName(const QString &path, const QString &filter)
 }
 
 /*!
-    \fn dirDialog::openDirName(const QString &path, const QString &filter)
+    \fn dirDialog::openDirName(const QString &path)
     \brief selection of a directory
 
     \param path directory to open (preselected)
-    \param filter    types to select from (e.g. mydirs*)
-
     \return if canceled or no selection then return an empty string else return string containing absolute dirname
 */
 

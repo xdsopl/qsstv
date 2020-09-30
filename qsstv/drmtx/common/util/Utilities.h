@@ -36,7 +36,7 @@
 
 #include "../GlobalDefinitions.h"
 //#include "Settings.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../matlib/Matlib.h"
 #include <map>
 #include <iostream>

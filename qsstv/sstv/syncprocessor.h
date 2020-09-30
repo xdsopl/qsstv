@@ -20,20 +20,11 @@ struct ssenitivity
   unsigned int minMatchedLines;
   unsigned int maxLineDistanceModeDetect;
   unsigned int maxLineDistanceInSync;
-  DSPFLOAT onVolume;
-  DSPFLOAT offVolume;
-  DSPFLOAT startToMax;
-
-//  DSPFLOAT minVolume;
-//  DSPFLOAT currentVolumeRatio;
-//  DSPFLOAT switchOff;
-//  unsigned int minMatchedLines;
-//  unsigned int maxSyncsLost;
-//  unsigned int maxLineDistance;
-//  DSPFLOAT prevMaxIntegrator;
-//  DSPFLOAT trackMaxIntegrator;
-//  DSPFLOAT falseSyncs;
-
+  DSPFLOAT onRatio;
+  DSPFLOAT offRatio;
+  int minVolume;
+  int maxTempOutOfSyncLines;
+  int maxOutOfSyncLines;
 };
 
 struct ssyncEntry
@@ -48,8 +39,6 @@ struct ssyncEntry
     start=0;
     end=0;
     startVolume=0;
-//    endVolume=0;
-//    midVolume=0;
     maxVolume=0;
     width=0;
     inUse=false;
@@ -65,8 +54,6 @@ struct ssyncEntry
   uint start;
   uint startVolume;
   uint end;
-//  uint endVolume;
-//  uint midVolume;
   uint maxVolume;
   uint width;
   bool inUse;
@@ -100,12 +87,12 @@ struct smatchEntry
     endFrom=0;
     endTo=0;
   }
-  uint from;
-  uint to;
+  uint from; /**< the from index pointing to the syncArray */
+  uint to;   /**< the to index pointing to  the syncArray */
   uint lineSpacing;
   double fraction;
-  uint endFrom;
-  uint endTo;
+  uint endFrom; /**< sampleCounter From */
+  uint endTo; /**< sampleCounter To */
 };
 
 struct sslantXY
@@ -121,7 +108,7 @@ class syncProcessor : public QObject
 {
   Q_OBJECT
 public:
-//  enum esyncState {SYNCOFF,SYNCUP,SYNCSTART,SYNCON,SYNCDOWN,SYNCEND,SYNCVALID};
+  //  enum esyncState {SYNCOFF,SYNCUP,SYNCSTART,SYNCON,SYNCDOWN,SYNCEND,SYNCVALID};
   enum esyncState {SYNCOFF,SYNCACTIVE,SYNCVALID};
   enum esyncProcessState {MODEDETECT,INSYNC,SYNCLOSTNEWMODE,SYNCLOSTFALSESYNC,SYNCLOSTMISSINGLINES,SYNCLOST,RETRACEWAIT};
   explicit syncProcessor(bool narrow,QObject *parent = 0);
@@ -141,19 +128,19 @@ public:
   void clear();
   void recalculateMatchArray();
   DSPFLOAT getNewClock() {return modifiedClock;}
-  void setEnabled(bool enable) {enabled=enable;}
+  void setSyncDetectionEnabled(bool enable) {enableSyncDetection=enable;}
 
 
   quint32 sampleCounter;
   quint32 syncPosition;
   quint32 lastValidSyncCounter;
-//  DSPFLOAT trackMax;
+  //  DSPFLOAT trackMax;
   int      syncQuality;
   modeBase *currentModePtr;
 
   quint16      *freqPtr;
   DSPFLOAT     *syncVolumePtr;
-//  unsigned int *inputVolumePtr;
+  DSPFLOAT     *inputVolumePtr;
   videoFilter  *videoFilterPtr;
   bool         retraceFlag;
   bool tempOutOfSync;
@@ -175,7 +162,7 @@ private:
   quint32 maxLineSamples;
   quint16 syncArrayIndex;
   ssyncEntry syncArray[MAXSYNCENTRIES];
-  modeMatchChain matchArray[ENDNARROW+1];
+  modeMatchChain matchArray[NOTVALID];
   quint16 slantAdjustLine;
   esstvMode currentMode;
   esyncState syncState;
@@ -220,7 +207,7 @@ private:
   DSPFLOAT syncWidth;
 
 
-// signal quality
+  // signal quality
   quint16 falseSlantSync;
   quint16 unmatchedSyncs;
   quint16 falseSyncs;
@@ -228,14 +215,13 @@ private:
   quint16 missingLines;
 
   bool detectNarrow;
-  bool enabled;
+  bool enableSyncDetection;
   uint  minMatchedLines;
-  uint  visTimeout;
+  uint  visEndCounter;
+//  DSPFLOAT syncAvgPtr[RXSTRIPE];
+//  DSPFLOAT syncAvg;
 
 };
-
-
-
 
 #endif // SYNCPROCESSOR_H
 

@@ -33,7 +33,7 @@
 #include <stdlib.h>
 #include "drm.h"
 #include "drmtransmitter.h"
-//#include"utils/supportfunctions.h"
+//#include"supportfunctions.h"
 
 
 /* Implementation *************************************************************/

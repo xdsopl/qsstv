@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -22,10 +22,13 @@
 
 #include <QtGui>
 #include "appglobal.h"
-#include "utils/dirdialog.h"
+#include "dirdialog.h"
 #include "editorview.h"
 #include "configparams.h"
+
+#ifndef STANDALONE
 #include "dispatcher.h"
+#endif
 
 /*! 
   constructor
@@ -41,7 +44,8 @@ editor::editor(QWidget *parent,Qt::WindowFlags flags): QMainWindow(parent,flags)
   resize(640,480);
   addToLog (QString(" editor create: %1")
             .arg(QString::number((ulong)this,16)),LOGEDIT);
-  setWindowTitle("QSSTV Editor");
+  setWindowTitle("Template Editor");
+  readSettings();
 }
 
 /*! 
@@ -50,8 +54,6 @@ editor::editor(QWidget *parent,Qt::WindowFlags flags): QMainWindow(parent,flags)
 
 editor::~editor()
 {
-  addToLog (QString(" editor delete: %1")
-            .arg(QString::number((ulong)this,16)),LOGEDIT);
   writeSettings();
 }
 
@@ -99,15 +101,15 @@ void editor::initActions()
   fileOpen->setStatusTip(tr("Open an image file"));
   connect(fileOpen, SIGNAL(triggered()), this, SLOT(slotFileOpen()));
 
-  fileSave = new QAction(QIcon(":/icons/filesave.png"),tr("&Save file .."),this);
+  fileSave = new QAction(QIcon(":/icons/filesave.png"),tr("&Save file"),this);
   fileSave->setStatusTip(tr("Save the file under the same name and format"));
   connect(fileSave, SIGNAL(triggered()), this, SLOT(slotFileSave()));
 
-  fileSaveImage = new QAction(tr("Save &Image file .."),this);
+  fileSaveImage = new QAction(tr("Save as &Image"),this);
   fileSaveImage->setStatusTip(tr("Save the file in PNG format"));
   connect(fileSaveImage, SIGNAL(triggered()), this, SLOT(slotFileSaveImage()));
 
-  fileSaveTemplate = new QAction(("Save &Template .."),this);
+  fileSaveTemplate = new QAction(("Save as &Template"),this);
   fileSaveTemplate->setStatusTip(tr("Save template file "));
   connect(fileSaveTemplate, SIGNAL(triggered()), this, SLOT(slotFileSaveTemplate()));
 
@@ -132,9 +134,6 @@ void editor::initActions()
   deleteAction=new QAction(tr("&Delete"),this);
   deleteAction->setShortcut(tr("Del"));
   connect(deleteAction, SIGNAL(triggered()), ev->getScene(), SLOT(slotDeleteItem()));
-
-//  dump= new QAction(tr("dump"),this);
-//  connect(dump, SIGNAL(triggered()), ev, SLOT(slotDump()));
 }
 
 
@@ -153,7 +152,6 @@ void editor::initMenubar()
   editMenu->addAction(copy);
   editMenu->addAction(paste);
   editMenu->addAction(clearAll);
-//  editMenu->addAction(dump);
 }
 
 
@@ -168,15 +166,16 @@ void editor::slotFileNew()
                                         1 ) )
         { // Escape == button 2
         case 0: // Continu clicked
-        break;
+          break;
         case 1: // Cancel clicked
-        return;
-        break;
+          return;
+          break;
         }
     }
   ev->slotClearAll();
   localFile.close();
-  localFile.setFileName("");
+  localFile.setFileName("Untitled.templ");
+  setWindowTitle(QString("Template Editor: %1").arg(localFile.fileName()));
 }
 
 void editor::slotFileOpen()
@@ -184,12 +183,15 @@ void editor::slotFileOpen()
   /*	QFileDialog *fd = new QFileDialog(this,0,true);
   fd->show();*/
   dirDialog d(this,0);
-  QString s=d.openFileName(txStockImagesPath,"*.png *.gif *.jpg *.templ");
-  if (s==QString::null) return ;
+  QString s=d.openFileName(templatesPath,"*.png *.gif *.jpg *.templ");
+  if (s.isNull()) return ;
   if (s.isEmpty()) return ;
   localFile.setFileName(s);
-  ev->open(localFile);
-  addToLog("localfile after open = " + localFile.fileName(),LOGEDIT);
+  if(ev->open(localFile))
+    {
+      setWindowTitle(QString("Template Editor: %1").arg(s));
+      addToLog("localfile after open = " + localFile.fileName(),LOGEDIT);
+    }
 }
 
 /*!
@@ -224,9 +226,10 @@ void editor::slotFileSaveImage()
       s=txStockImagesPath;
     }
   s=d.saveFileName(s,"*.png","png");
-  if (s==QString::null) return ;
+  if (s.isNull()) return ;
   if (s.isEmpty()) return ;
   localFile.setFileName(s);
+  setWindowTitle(QString("Template Editor: %1").arg(s));
   ev->save(localFile,false);
 }
 
@@ -239,15 +242,17 @@ void editor::slotFileSaveTemplate()
       s=templatesPath;
     }
   s=d.saveFileName(s,"*.templ","templ");
-  if (s==QString::null) return ;
+  if (s.isNull()) return ;
   if (s.isEmpty()) return ;
   localFile.setFileName(s);
+  setWindowTitle(QString("Template Editor: %1").arg(s));
   ev->save(localFile,true);
 }
 
 
 void editor::slotFileQuit()
 {
+  ev->writeSettings();
   close();
 }
 
@@ -268,33 +273,27 @@ void editor::closeEvent(QCloseEvent *e)
         {
         case QMessageBox::Save:
           slotFileSave();
-        break;
+          break;
         case QMessageBox::Discard:
           // Don't Save was clicked
-        break;
+          break;
         case QMessageBox::Cancel:
-        return;
-        break;
+          return;
+          break;
         default:
           // should never be reached
-        break;
+          break;
         }
     }
-
+#ifndef STANDALONE
   editorFinishedEvent *ce = new editorFinishedEvent(true,localFile.fileName());
   QApplication::postEvent(dispatcherPtr, ce );  // Qt will delete it when done	emit imageAvailable(ev->getImage());
+#endif
   writeSettings();
   e->accept();
 }
 
 
-//bool editor::render(QImage **im,QString fn)
-//{
-//	if(!openFile(fn)) return false;
-//  *im=ev->getScene()->renderImage();
-//  addToLog(QString("editor: render size: %1 x %2").arg((*im)->size().width()).arg((*im)->size().height()),LOGEDIT);
-//  return true;
-//}
 
 bool editor::setImage(QImage *im)
 {

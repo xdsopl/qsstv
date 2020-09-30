@@ -7,9 +7,19 @@
 #include "txfunctions.h"
 #include "drmtransmitter.h"
 #include "ui_txwidget.h"
+#include "ftpfunctions.h"
+
+#include "qglobal.h"
 
 #include <QWidget>
 
+enum etxMode {TXUPLOAD,TXBINARY,TXNORMAL};
+
+#define NOTIFYCHECKINTERVAL 15*1000
+#define NUMBEROFNOTIFYCHECKS 4
+
+//#define DRMMAXSIZE 100000
+//#define DRMMINSIZE 3000
 
 
 
@@ -26,13 +36,14 @@ public:
   explicit txWidget(QWidget *parent = 0);
   ~txWidget();
   void init();
-  void startTX(bool st, bool check=true);
+//  void startTX(bool st, bool check=true);
   void prepareTx();
   void prepareTxComplete(bool ok);
   void writeSettings();
   void readSettings();
   imageViewer *getImagePtr();
-  void repeat(QImage *im,esstvMode sm);
+  //  void repeat(QImage *im,esstvMode sm);
+  void sendRepeaterImage(esstvMode rxMode=NOTVALID);
   void setImage(QImage *ima);
   void setImage(QString fn);
   void setProgress(uint prg);
@@ -43,14 +54,16 @@ public:
   imageViewer *getImageViewerPtr(){ return imageViewerPtr;}
   QString getPreviewFilename();
   void txTestPattern(etpSelect sel);
+  void startNotifyCheck(QString tmask);
 
-  void setDRMNotifyText(QString txt) {      
-      //ui->txNotificationList->clear();                 
-      ui->txNotificationList->setPlainText(txt);
-      }
-  void appendDRMNotifyText(QString txt) {      
-      ui->txNotificationList->appendPlainText(txt);
-      }
+  void setDRMNotifyText(QString txt)
+  {
+    ui->txNotificationList->setPlainText(txt);
+  }
+  void appendDRMNotifyText(QString txt)
+  {
+    ui->txNotificationList->appendPlainText(txt);
+  }
 
   //  bool prepareHybrid(QString fn);
   bool prepareText(QString txt);
@@ -73,8 +86,7 @@ public slots:
   void slotStart();
   void slotUpload();
   void slotStop();
-//  void slotDisplayStatusMessage(QString);
-
+  //  void slotDisplayStatusMessage(QString);
   void slotGenerateSignal();
   void slotSweepSignal();
   void slotGenerateRepeaterTone();
@@ -82,43 +94,63 @@ public slots:
   //  void slotReplay();
   void slotRepeaterTimer();
   void slotFileOpen();
-
   void slotSnapshot();
-  void slotSize(int v);
+  void slotSize(int fsize);
   void slotSizeApply();
   void slotTransmissionMode(int rxtxMode);
   void slotProfileChanged(int );
-  void slotImageChanged();
+
   void slotModeChanged(int);
   void slotResizeChanged(int);
   void slotBinary();
   void slotHybridToggled();
+  void slotNotifyTimeout();
+  void slotListingDone(bool err);
+
+
+private slots:
+  void slotRepaterDelay();
+    void slotImageChanged();
 
 signals:
   void modeSwitch(int);
 
 private:
-  Ui::txWidget *ui;
-  txFunctions *txFunctionsPtr;
   void initView();
   void setParams();
   void sendHybrid(QString fn);
+  void applyTemplate();
+  void updateTxTime();
+  void startTxImage();
+  void enableButtons(bool enable);
+
+  Ui::txWidget *ui;
+  txFunctions *txFunctionsPtr;
+
   editor *ed;
   QTimer *repeaterTimer;
+  QTimer repeaterTxDelayTimer;
   int repeaterIndex;
   QImage origImage;
   QImage resultImage;
-  void applyTemplate();
-  void updateTxTime();
+
   imageViewer *imageViewerPtr;
   etransmissionMode currentTXMode;
-  int sizeRatio;
-  bool sizeRatioChanged;
+  uint maxSize;
+  uint compressedSize;
+  bool sizeChanged;
   int drmProfileIdx;
   QString previewFilename;
-  int doTx;
+  etxMode doTx;
+  ftpFunctions ff;
+  QTimer notifyTimer;
+  int numberOfNotifyChecks;
+  QString mask;
+  esstvMode txMode;
+  bool notifyBusy;
+  bool repeaterIdleImage;
+  float fileSize;
 
-  void startTxImage();
 };
 
 #endif // TXWIDGET_H

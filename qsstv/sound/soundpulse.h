@@ -8,8 +8,6 @@
 //#define PLAYLENGTH   512
 #define PLAYLENGTH   (4096*5)
 
-/*! \file soundio.h */
-
 
 #include <pulse/simple.h>
 #include <pulse/error.h>
@@ -28,7 +26,8 @@ protected:
   void closeDevices();
   void waitPlaybackEnd();
 private:
-  struct stream_data {
+  struct stream_data
+  {
     pa_simple*	stream;
     pa_sample_spec	stream_params;
     pa_buffer_attr  buffer_attrs;

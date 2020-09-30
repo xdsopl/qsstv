@@ -127,8 +127,10 @@
        <property name="plainText">
         <string>Enter the frequency in MHz and select the mode.
 Example:
-14.230   SSTV USB
-7.058     DRM LSB</string>
+14.230   SSTV USB        Wide
+7.058     DRM PKTUSB Normal
+
+Passband is not used when PKTxxx is selected (at least not on ICOM)</string>
        </property>
       </widget>
      </item>

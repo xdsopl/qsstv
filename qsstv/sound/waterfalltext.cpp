@@ -11,12 +11,11 @@
 #include <QPainter>
 #include <QDebug>
 
-#define FREQ_AMPLITUDE 16E3
-#define FREQ_OFFSET 350.0
+//#define FREQ_AMPLITUDE 16E3
+#define FREQ_AMPLITUDE 6E3
+#define FREQ_OFFSET 300.0
 #define FREQ_MAX 2600.
 
-//#define FONTSIZE 13
-//#define FONTNAME "Arial"
 
 waterfallText::waterfallText()
 {
@@ -25,12 +24,7 @@ waterfallText::waterfallText()
   dataBuffer=NULL;
   txFilter=NULL;
   phr=phi=NULL;
-
 }
-
-/**
-  \todo:: txFilter not used
- */
 
 waterfallText::~waterfallText()
 {
@@ -39,7 +33,6 @@ waterfallText::~waterfallText()
   if(outFiltered) delete outFiltered;
   if(dataBuffer) fftw_free(dataBuffer);
 }
-
 
 void waterfallText::init()
 {

@@ -4,7 +4,7 @@
 #include <QString>
 #include <QWidget>
 #include <QSettings>
-#include "utils/supportfunctions.h"
+#include "supportfunctions.h"
 
 class baseConfig: public QWidget
 {

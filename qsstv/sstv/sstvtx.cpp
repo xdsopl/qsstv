@@ -2,7 +2,7 @@
 #include "appglobal.h"
 #include "configparams.h"
 #include "soundbase.h"
-#include "sstv/cw.h"
+#include "cw.h"
 #include "dispatcher.h"
 #include "synthes.h"
 #include "modes/modes.h"
@@ -243,7 +243,10 @@ void sstvTx::applyTemplate(QString templateFilename,bool useTemplate,imageViewer
 
 void sstvTx::abort()
 {
-  if(currentMode) currentMode->abort();
+  if(currentMode)
+    {
+      currentMode->abort();
+    }
 }
 
 

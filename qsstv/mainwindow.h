@@ -8,6 +8,7 @@
 
 class configDialog;
 class spectrumWidget;
+class ftpThread;
 
 namespace Ui {
   class MainWindow;
@@ -55,7 +56,6 @@ private slots:
   void slotClearScope();
   void slotDumpSamplesPerLine();
   void slotTxTestPattern();
-
 #endif
 
 private:
@@ -65,6 +65,7 @@ private:
   void writeSettings();
   void restartSound(bool inStartUp);
   void cleanUpCache(QString dirPath);
+//  void setupFtp(ftpThread *&ptr, QString idName);
   QComboBox *transmissionModeComboBox;
   QPushButton *wfTextPushButton;
   QPushButton *fixPushButton;
@@ -77,6 +78,7 @@ private:
   QLabel *freqDisplay;
   void timerEvent(QTimerEvent *);
   QStringList modModeList;
+  QStringList modPassBandList;
 };
 
 #endif // MAINWINDOW_H

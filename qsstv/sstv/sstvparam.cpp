@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -20,15 +20,14 @@
 ***************************************************************************/
 #include "sstvparam.h"
 #include "appglobal.h"
-#include "utils/supportfunctions.h"
+#include "supportfunctions.h"
 #include "configparams.h"
 #include <math.h>
 
 
-bool useVIS;
 bool autoSlantAdjust;
 bool autoSave;
-int squelch;
+int sensitivity;
 int filterIndex;
 
 DSPFLOAT *lineTimeTableRX=NULL;
@@ -49,6 +48,7 @@ esstvMode sstvModeIndexTx;
 	Setup a table containing the relative positions expressed in samples	
 	\param modeIndex index of the different modes: Martin1=0 , ....
 	\param clock the adjusted samplingrate
+  \param transmit true if time table for transmit
 */
 void setupSSTVLineTimeTable(esstvMode modeIndex,DSPFLOAT clock, bool transmit)
 {
@@ -90,7 +90,9 @@ void dumpSamplesPerLine()
   int i;
   for(i=0;i<ENDNARROW;i++)
     {
-      logFilePtr->addToAux(QString("%1\t%2").arg(getSSTVModeNameShort((esstvMode) i)).arg(getLineLength((esstvMode) i,12000)));
+      QString msg=QString("%1  %2").arg(getSSTVModeNameShort((esstvMode) i)).arg(getLineLength((esstvMode) i,12000));
+      logFilePtr->addToAux(msg);
+      qDebug() << msg;
     }
 
 }
@@ -341,20 +343,17 @@ sSSTVParam SSTVTable[NUMSSTVMODES+1]=
   {"ML280"     ,"ML280",  ML280,   280.4060 ,640,496,496,0x8923,0.00900,0.00000,0.00100,0.00000,0.00900,0.00000,0.00100,0.00000,0.,1900,400 },
   {"ML320"     ,"ML320",  ML320,   320.0910 ,640,496,496,0x8A23,0.00900,0.00000,0.00100,0.00000,0.00900,0.00000,0.00100,0.00000,0.,1900,400 },
   {"FAX480"    ,"FAX480", FAX480,  133.63300,512,500,500,0x00  ,0.00512,0.00000,0.00000,0.00000,0.00512,0.00000,0.00000,0.00000,0.,1900,400 },
+  {"AVT24"     ,"AVT24",  AVT24,    22.50160,128,120,120,0xc0  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
+  {"AVT90"     ,"AVT90",  AVT90,    90.00450,320,240,240,0x44  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
+  {"AVT94"     ,"AVT94",  AVT94,    93.75000,320,200,200,0x48  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
 // narrowModes
   {"MP73-Narrow" ,"MP73-N",   MP73N,   72.9665,320,256,128, 0x5C256D,0.00900,0.00000,0.00100,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
   {"MP110-Narrow" ,"MP110-N", MP110N, 109.8320,320,256,128, 0x44456D,0.00900,0.00000,0.00100,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
   {"MP140-Narrow" ,"MP140-N", MP140N, 139.5300,320,256,128 ,0x40556D,0.00900,0.00000,0.00100,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
-
   {"MC110-Narrow" ,"MC110-N",   MC110N,   109.703, 320,256,256,   0x05456D,0.00800,0.00000,0.00050,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
   {"MC140-Narrow" ,"MC140-N",   MC140N,   140.426, 320,256,256,   0x01556D,0.00800,0.00000,0.00050,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
   {"MC180-Narrow" ,"MC180-N",   MC180N,   180.363, 320,256,256,   0x0D656D,0.00800,0.00000,0.00050,0.00000,0.00900,0.00000,0.00100,0.00000,0.,2172,128 },
-
-  {"AVT24"     ,"AVT24",  AVT24,    22.50160,128,120,120,0xc0  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
-  {"AVT90"     ,"AVT90",  AVT90,    90.00450,320,240,240,0x44  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
-  {"AVT94"     ,"AVT94",  AVT94,    93.75000,320,200,200,0x48  ,0.00500,0.00080,0.00050,0.00050,0.00500,0.00080,0.00000,0.00050,0.,1900,400 },
   {"No Mode"   ,"NOTVALID",NOTVALID ,0.00000,0,0,0,0x0000,0.00000,0.00000,0.000000,0.0000,0.00000,0.00000,0.000000,0.0000,0.,0,0}
-
 };
 
 
@@ -394,7 +393,7 @@ sSSTVParam SSTVTable[NUMSSTVMODES+1]=
 
 
 
-///**
+
 // * \brief setup active parameters
 
 //		Setup active parameters given the modeIndex

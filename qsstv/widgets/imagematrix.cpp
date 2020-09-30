@@ -21,15 +21,14 @@ imageMatrix::imageMatrix(QWidget *parent) :  QWidget(parent)
 
 imageMatrix::~imageMatrix()
 {
-//  if(verticalLayout!=NULL) delete verticalLayout;
-//  if( horizontalLayout!=NULL) delete horizontalLayout;
+// if(verticalLayout!=NULL) delete verticalLayout;
+// if( horizontalLayout!=NULL) delete horizontalLayout;
 }
 
 void imageMatrix::setupLayout()
 {
   if(verticalLayout!=NULL) delete verticalLayout;
   verticalLayout = new QVBoxLayout(parentPtr);
-  horizontalLayout=new QHBoxLayout();
   verticalLayout->setObjectName(QString::fromUtf8("vt1"));
   verticalLayout->setSpacing(2);
   verticalLayout->setContentsMargins(1, 1, 1, 1);
@@ -163,7 +162,7 @@ void imageMatrix::displayFiles()
           else
             {
            tempStr=fileList.at(k).absoluteFilePath();
-           if(((imageViewer *)gridLayout->itemAtPosition(i,j)->widget())->openImage(tempStr,false,false,true))
+           if(((imageViewer *)gridLayout->itemAtPosition(i,j)->widget())->openImage(tempStr,false,false,true,true))
              {
                 j++;
              }
@@ -214,6 +213,12 @@ void imageMatrix::slotEnd()
 
 void imageMatrix::slotLayoutChanged()
 {
+  int curPag=currentPage;
   getList();
+  if(curPag>=numPages)
+    {
+      if(curPag>0) curPag--;
+    }
+  currentPage=curPag;
   displayFiles();
 }

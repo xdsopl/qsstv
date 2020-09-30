@@ -33,7 +33,7 @@
 #define AFX_MODUL_H__41E39CD3_2AEC_400E_907B_148C0EC17A43__INCLUDED_
 
 #include "Buffer.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../Parameter.h"
 #include <iostream>
 

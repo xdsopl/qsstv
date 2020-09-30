@@ -30,7 +30,7 @@
 #define ENERGYDISPERSAL_H__3B0BA660_CA63_4344_2B_23453E7A0D31912__INCLUDED_
 
 #include "../GlobalDefinitions.h"
-#include "utils/vector.h"
+#include "vector.h"
 
 
 /* Classes ********************************************************************/

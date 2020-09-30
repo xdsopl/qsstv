@@ -9,7 +9,6 @@
 #include <QFile>
 #include <QDir>
 #include <QDebug>
-#include <QTemporaryFile>
 
 #define JP2_RFC3745_MAGIC "\x00\x00\x00\x0c\x6a\x50\x20\x20\x0d\x0a\x87\x0a"
 #define JP2_MAGIC "\x0d\x0a\x87\x0a"
@@ -139,13 +138,28 @@ void jp2IO::set_default_parameters(opj_decompress_parameters* parameters)
 
 void jp2IO::destroy_parameters(opj_decompress_parameters* parameters)
 {
-  if (parameters) {
-      if (parameters->precision) {
+  if (parameters)
+    {
+      if (parameters->precision)
+        {
           free(parameters->precision);
           parameters->precision = NULL;
         }
     }
 }
+
+void jp2IO::slotStart()
+{
+  bool result;
+  result=check(threadFilename);
+  if(result)
+    {
+      *threadImage=decode(threadFilename).copy();
+    }
+  emit done(result,fromCache);
+}
+
+
 
 QImage jp2IO::decode(QString fileName)
 {
@@ -157,7 +171,7 @@ QImage jp2IO::decode(QString fileName)
   l_stream = opj_stream_create_default_file_stream(fileName.toLatin1(),1);
   if (!l_stream)
     {
-      qDebug() << "ERROR -> failed to create the stream from the file " << parameters.infile;
+      addToLogDebug( QString("ERROR -> failed to create the stream from the file %1").arg(parameters.infile),LOGALL);
       destroy_parameters(&parameters);
       return qimage;
     }
@@ -165,7 +179,8 @@ QImage jp2IO::decode(QString fileName)
   /* decode the JPEG2000 stream */
   /* ---------------------- */
 
-  switch(parameters.decod_format) {
+  switch(parameters.decod_format)
+    {
     case J2K_CFMT:	/* JPEG-2000 codestream */
       {
         /* Get a decoder handle */
@@ -199,7 +214,7 @@ QImage jp2IO::decode(QString fileName)
 
   /* Setup the decoder decoding parameters using user parameters */
   if ( !opj_setup_decoder(l_codec, &(parameters.core)) ){
-      qDebug() << "ERROR -> opj_decompress: failed to setup the decoder";
+      addToLogDebug( "ERROR -> opj_decompress: failed to setup the decoder",LOGALL);
       destroy_parameters(&parameters);
       opj_stream_destroy(l_stream);
       opj_destroy_codec(l_codec);
@@ -208,8 +223,9 @@ QImage jp2IO::decode(QString fileName)
 
 
   /* Read the main header of the codestream and if necessary the JP2 boxes*/
-  if(! opj_read_header(l_stream, l_codec, &jp2Image)){
-      qDebug() << "ERROR -> opj_decompress: failed to read the header";
+  if(! opj_read_header(l_stream, l_codec, &jp2Image))
+    {
+      addToLogDebug( "ERROR -> opj_decompress: failed to read the header",LOGALL);
       destroy_parameters(&parameters);
       opj_stream_destroy(l_stream);
       opj_destroy_codec(l_codec);
@@ -221,8 +237,9 @@ QImage jp2IO::decode(QString fileName)
     {
       /* Optional if you want decode the entire image */
       if (!opj_set_decode_area(l_codec, jp2Image, (OPJ_INT32)parameters.DA_x0,
-                               (OPJ_INT32)parameters.DA_y0, (OPJ_INT32)parameters.DA_x1, (OPJ_INT32)parameters.DA_y1)){
-          qDebug() <<	"ERROR -> opj_decompress: failed to set the decoded area";
+                               (OPJ_INT32)parameters.DA_y0, (OPJ_INT32)parameters.DA_x1, (OPJ_INT32)parameters.DA_y1))
+        {
+          addToLogDebug( "ERROR -> opj_decompress: failed to set the decoded area",LOGALL);
           destroy_parameters(&parameters);
           opj_stream_destroy(l_stream);
           opj_destroy_codec(l_codec);
@@ -233,7 +250,7 @@ QImage jp2IO::decode(QString fileName)
       /* Get the decoded image */
       if (!(opj_decode(l_codec, l_stream, jp2Image) && opj_end_decompress(l_codec,	l_stream)))
         {
-          qDebug() <<"ERROR -> opj_decompress: failed to decode image!";
+          addToLogDebug( "ERROR -> opj_decompress: failed to decode image!",LOGALL);
           destroy_parameters(&parameters);
           opj_destroy_codec(l_codec);
           opj_stream_destroy(l_stream);

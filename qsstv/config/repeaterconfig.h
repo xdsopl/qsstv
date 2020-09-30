@@ -2,19 +2,22 @@
 #define REPEATERCONFIG_H
 
 #include "baseconfig.h"
-#include "sstv/sstvparam.h"
+#include "sstvparam.h"
 
 
-extern bool repeaterEnable;
+extern bool repeaterEnabled;
 extern int repeaterImageInterval;
 extern esstvMode repeaterTxMode;
+extern esstvMode repeaterIdleTxMode;
 extern QString repeaterImage1;
 extern QString repeaterImage2;
 extern QString repeaterImage3;
 extern QString repeaterImage4;
 extern QString repeaterAcknowledge;
 extern QString repeaterTemplate;
-extern QString idleTemplate;
+extern QString repeaterIdleTemplate;
+extern int repeaterTxDelay;
+extern int repeaterImageSize; // in kB
 
 namespace Ui {
 class repeaterConfig;
@@ -31,6 +34,14 @@ public:
   void writeSettings();
   void getParams();
   void setParams();
+
+private slots:
+  void slotRp1Browse();
+  void slotRp2Browse();
+  void slotRp3Browse();
+  void slotRp4Browse();
+  void slotRepeaterIdleTemplateBrowse();
+  void slotRepeaterTemplateBrowse();
   
 private:
   Ui::repeaterConfig *ui;

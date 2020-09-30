@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -20,6 +20,8 @@
  ***************************************************************************/
 #include "modegbr.h"
 
+
+// used with Martin 1 and Martin 2
 
 modeGBR::modeGBR(esstvMode m,unsigned int len, bool tx,bool narrowMode):modeBase(m,len,tx,narrowMode)
 {
@@ -97,7 +99,8 @@ modeBase::embState modeGBR::rxSetupLine()
 
 void modeGBR::calcPixelPositionTable(unsigned int colorLine,bool tx)
 {
-  unsigned int i;DSPFLOAT lineStart=start;
+  unsigned int i;
+  DSPFLOAT lineStart=start;
   int ofx=0;
   if(tx) ofx=1;
   switch (colorLine)

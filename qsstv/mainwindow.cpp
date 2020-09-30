@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -21,7 +21,7 @@
 
 #include "mainwindow.h"
 #include "appglobal.h"
-#include "utils/logging.h"
+#include "logging.h"
 #include "dispatch/dispatcher.h"
 #include "ui_mainwindow.h"
 #include "soundpulse.h"
@@ -46,6 +46,7 @@
 #include <QScreen>
 #include <QApplication>
 #include "filewatcher.h"
+#include "ftpfunctions.h"
 
 
 /**
@@ -55,10 +56,11 @@
  */
 mainWindow::mainWindow(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainWindow)
 {
+  inStartup=true;
   QApplication::instance()->thread()->setObjectName("qsstv_main");
   wfTextPushButton=new QPushButton("WF Text",this);
   bsrPushButton=new QPushButton("BSR",this);
-
+  setObjectName("mainThread");
   freqComboBox=new QComboBox(this);
   idPushButton=new QPushButton("WF ID",this);
   cwPushButton=new QPushButton("CW ID",this);
@@ -112,6 +114,14 @@ mainWindow::mainWindow(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainW
   readSettings();
   if(pulseSelected) soundIOPtr=new soundPulse;
   else  soundIOPtr=new soundAlsa;
+
+  //  setupFtp(notifyRXIntfPtr,"FtpNotificationRx");
+  //  setupFtp(hybridRxIntfPtr,"FtpHybridRx");
+  //  setupFtp(saveImageIntfPtr,"FtpSaveImageRx");
+
+  //  setupFtp(hybridTxIntfPtr,"FtpHybridTx");
+  //  setupFtp(notifyTXIntfPtr,"FtpNotificationTx");
+  //  setupFtp(onlineStatusIntfPtr,"FtpOnlineStatus");
 
   dispatcherPtr=new dispatcher;
   waterfallPtr=new waterfallText;
@@ -167,6 +177,9 @@ mainWindow::mainWindow(QWidget *parent) : QMainWindow(parent),  ui(new Ui::MainW
   ui->menuScope->menuAction()->setVisible(false);
 
 #endif
+
+
+
 }
 
 /**
@@ -178,14 +191,13 @@ mainWindow::~mainWindow()
   delete ui;
 }
 
+
 /**
  * @brief initialize sound device and dispatcher
  *
  */
 void mainWindow::init()
 {
-  // starting threads
-  // todo  ftp threads
   cleanUpCache(rxSSTVImagesPath);
   cleanUpCache(rxDRMImagesPath);
   cleanUpCache(txSSTVImagesPath);
@@ -239,6 +251,7 @@ void mainWindow::restartSound(bool inStartUp)
 
 void mainWindow::startRunning()
 {
+  inStartup=false;
   dispatcherPtr->startRX();
 }
 
@@ -262,8 +275,6 @@ void mainWindow::readSettings()
   qSettings.endGroup();
   ui->spectrumFrame->readSettings();
   //  configDialogPtr->readSettings();
-  logFilePtr->readSettings();
-
 }
 
 void mainWindow::writeSettings()
@@ -275,12 +286,10 @@ void mainWindow::writeSettings()
   qSettings.setValue( "windowX", x() );
   qSettings.setValue( "windowY", y() );
   qSettings.setValue("transmissionModeIndex",(int)transmissionModeIndex);
-  logFilePtr->writeSettings();
   galleryWidgetPtr->writeSettings();
   rxWidgetPtr->writeSettings();
   txWidgetPtr->writeSettings();
   configDialogPtr->writeSettings();
-  logFilePtr->writeSettings();
   qSettings.endGroup();
   ui->spectrumFrame->writeSettings();
 }
@@ -303,45 +312,49 @@ void mainWindow::slotSaveWaterfallImage()
 {
   QImage *wf = ui->spectrumFrame->getImage();
   if (wf) {
-     double freq=0;
-     QDateTime now=QDateTime::currentDateTime();
-     QString fn="waterfall-"+now.toString("yyyyMMddhhmmss")+".jpg";
+      double freq=0;
+      QDateTime now=QDateTime::currentDateTime();
+      QString fn="waterfall-"+now.toString("yyyyMMddhhmmss")+".jpg";
 
-     QImage im(wf->width()+2, wf->height()+22, QImage::Format_RGB32);
-     QPainter p(&im);
+      QImage im(wf->width()+2, wf->height()+22, QImage::Format_RGB32);
+      QPainter p(&im);
 
-     im.fill(Qt::black);
-     p.setPen(Qt::lightGray);
-     p.drawImage(2,20,*wf);
-     p.drawRect(0,0,wf->width()+1,wf->height()+21);
+      im.fill(Qt::black);
+      p.setPen(Qt::lightGray);
+      p.drawImage(2,20,*wf);
+      p.drawRect(0,0,wf->width()+1,wf->height()+21);
 
-     //TODO: rig frequency etc
-     rigControllerPtr->getFrequency(freq);
-     if (freq>0)
+      //TODO: rig frequency etc
+      rigControllerPtr->getFrequency(freq);
+      if (freq>0)
         p.drawText(1,15, QString("%1 MHz").arg(freq/1000000.0,1,'f',6));
-     else
+      else
         p.drawText(1,15, "no freq");
 
-     if (im.save(fn, "jpg"))
-       {
-        statusBarPtr->showMessage("Saved "+fn);
+      if (im.save(fn, "jpg"))
+        {
+          statusBarPtr->showMessage("Saved "+fn);
         }
-     else {
-        statusBarPtr->showMessage("Error saving image");
+      else {
+          statusBarPtr->showMessage("Error saving image");
         }
-     delete wf;
-     }
+      delete wf;
+    }
 }
 
 void mainWindow::slotExit()
 {
-  int exit;
-  exit=QMessageBox::information(this, tr("Quit..."),tr("Do you really want to quit QSSTV?"), QMessageBox::Ok, QMessageBox::Cancel);
+  int exit=QMessageBox::Ok;
+  if(confirmClose)
+    {
+      exit=QMessageBox::information(0, tr("Quit..."),tr("Do you really want to quit QSSTV?"), QMessageBox::Ok, QMessageBox::Cancel);
+    }
+
   if(exit==QMessageBox::Ok)
     {
       statusBarPtr->showMessage("Cleaning up...");
       dispatcherPtr->idleAll();
-      dispatcherPtr->setOnlineStatus(false);
+      rxWidgetPtr->setOnlineStatus(false);
       rxWidgetPtr->functionsPtr()->stopThread();
       txWidgetPtr->functionsPtr()->stopThread();
       if(soundIOPtr) soundIOPtr->stopSoundThread();
@@ -372,6 +385,8 @@ void mainWindow::slotConfigure()
 void mainWindow::slotLogSettings()
 {
   logFilePtr->maskSelect(this);
+  logFilePtr->writeSettings();
+
 }
 
 void mainWindow::slotResetLog()
@@ -390,7 +405,7 @@ void mainWindow::slotDocumentation()
 void mainWindow::slotAboutQSSTV()
 {
   QString temp=tr("QSSTV\nVersion: ") + MAJORVERSION + MINORVERSION;
-  temp += "\n http://users.telenet.be/on4qz \n(c) 2000-2016 -- Johan Maes - ON4QZ\n HAMDRM Software based on RX/TXAMADRM\n from PA0MBO";
+  temp += "\n http://users.telenet.be/on4qz \n(c) 2000-2019 -- Johan Maes - ON4QZ\n HAMDRM Software based on RX/TXAMADRM\n from PA0MBO";
   QMessageBox::about(this,tr("About..."),temp);
 
 }
@@ -415,12 +430,14 @@ void mainWindow::setSSTVDRMPushButton(bool inDRM)
   if(inDRM) modeStr="DRM";
   else modeStr="SSTV";
   modModeList.clear();
+  modPassBandList.clear();
   for(i=0;i<freqList.count();i++)
     {
       if(modeList.at(i)==modeStr)
         {
           freqComboBox->addItem(freqList.at(i));
           modModeList.append(sbModeList.at(i));
+          modPassBandList.append(passBandList.at(i));
         }
     }
 }
@@ -467,13 +484,14 @@ void mainWindow::slotSendWfText()
 void mainWindow::slotSetFrequency(int freqIndex)
 {
   QByteArray ba;
-  QString freqStr,mode;
+  QString freqStr,mode,passBand;
   freqStr=freqComboBox->itemText(freqIndex);
   mode=modModeList.at(freqIndex);
+  passBand=modPassBandList.at(freqIndex);
   if(freqStr.isEmpty()) return;
   double fr=freqStr.toDouble()*1000000.;
   rigControllerPtr->setFrequency(fr);
-  rigControllerPtr->setMode(mode);
+  rigControllerPtr->setMode(mode,passBand);
   QString s=additionalCommand;
   //FEF7AE01A060101FD
   if(!s.isEmpty() && !rigControllerPtr->params()->enableXMLRPC)
@@ -499,6 +517,10 @@ void mainWindow::timerEvent(QTimerEvent *)
     {
       fr/=1000000.;
       if(fr>1) freqDisplay->setText(QString::number(fr,'f',6));
+    }
+  else
+    {
+      freqDisplay->setText("No Rig");
     }
 }
 
@@ -556,6 +578,7 @@ void mainWindow::slotFullScreen()
 
 
 #ifndef QT_NO_DEBUG
+
 void mainWindow::slotShowDataScope()
 {
   scopeViewerData->show(true,true,true,true);
@@ -599,4 +622,6 @@ void mainWindow::slotTxTestPattern()
       txWidgetPtr->txTestPattern(sel);
     }
 }
+
+
 #endif

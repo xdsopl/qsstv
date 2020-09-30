@@ -15,7 +15,7 @@ class spectrumWidget : public QFrame
 public:
   spectrumWidget(QWidget *parent = 0);
   ~spectrumWidget();
-  void init(int length, int slices, int isamplingrate);
+  void init(int length, int numBlocks, int isamplingrate);
 //  void realFFT(short int *iBuffer);
 //  void realFFT(float *iBuffer);
   void realFFT(double *iBuffer);

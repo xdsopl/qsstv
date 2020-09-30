@@ -1,3 +1,24 @@
+/**************************************************************************
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
+*   on4qz@telenet.be                                                      *
+*   http://users.telenet.be/on4qz                                         *
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+*   This program is distributed in the hope that it will be useful,       *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+*   GNU General Public License for more details.                          *
+*                                                                         *
+*   You should have received a copy of the GNU General Public License     *
+*   along with this program; if not, write to the                         *
+*   Free Software Foundation, Inc.,                                       *
+*   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+***************************************************************************/
+
 #include "sourcedecoder.h"
 #include "drm.h"
 #include "appglobal.h"
@@ -6,7 +27,7 @@
 #include "dispatch/dispatcher.h"
 #include "reedsolomoncoder.h"
 #include "demodulator.h"
-#include "ftp.h"
+#include "ftpfunctions.h"
 #include "configparams.h"
 #include "logbook/logbook.h"
 #include "drmstatusframe.h"
@@ -22,6 +43,8 @@
 sourceDecoder::sourceDecoder(QObject *parent) : QObject(parent)
 {
   transportBlockPtrList.clear();
+  ff=new ftpFunctions;
+  connect(ff,SIGNAL(downloadDone(bool,QString)),SLOT(slotDownloadDone(bool,QString)));
 
 }
 
@@ -85,8 +108,8 @@ bool sourceDecoder::decode()
     case MOTDATA:  addToLog("Datasegment",LOGDRMSRC);   addDataSegment(); break;
     case MOTHEAD:  addToLog("Headersegment",LOGDRMSRC); addHeaderSegment(); break;
     default:
-    return false;
-    break;
+      return false;
+      break;
     }
   return true;
 }
@@ -317,7 +340,7 @@ bool sourceDecoder::addHeaderSegment()
   // The header core is followed by a number of parameter blocks
   // the first byte of every parameter block contains a 2-bits PLI (B7 and B6) indicating the type of parameter block.
 
-  while(currentDataPacket.ba.count())  // todo
+  while(currentDataPacket.ba.count())
     {
       PLI=dataPtr[0]>>6;
       paramID=dataPtr[0]&0x3F;
@@ -325,15 +348,15 @@ bool sourceDecoder::addHeaderSegment()
         {
         case 0:
           currentDataPacket.advance(1);
-        break;
+          break;
         case 1:
           loadParams(tbPtr,paramID,1);
           currentDataPacket.advance(2);
-        break;
+          break;
         case 2:
           loadParams(tbPtr,paramID,4);
           currentDataPacket.advance(5);
-        break;
+          break;
         case 3:
           extBit=dataPtr[0]&0x80;
           if(extBit)
@@ -348,7 +371,7 @@ bool sourceDecoder::addHeaderSegment()
             }
           loadParams(tbPtr,paramID,dataFieldLength);
           currentDataPacket.advance(dataFieldLength);
-        break;
+          break;
         }
     }
   return true;
@@ -365,16 +388,16 @@ void sourceDecoder::loadParams(transportBlock *tbPtr,unsigned char paramID,int l
   switch(paramID)
     {
     case 5: // expiration
-    break;
+      break;
     case 6:
-    break;
+      break;
     case 12:
       tbPtr->fileName=QString::fromLatin1(currentDataPacket.ba.data()+1).left(len-1);
       stce= new rxDRMStatusEvent(QString("%1").arg(tbPtr->fileName));
       QApplication::postEvent( dispatcherPtr, stce );  // Qt will delete it when done
-    break;
+      break;
     default:
-    break;
+      break;
     }
 }
 
@@ -443,6 +466,7 @@ void sourceDecoder::writeData(transportBlock *tbPtr)
   erasureList.clear();
   erasureList.append(tbPtr->totalSegments);
   erasureList.append(tbPtr->defaultSegmentSize);
+  addToLog("Write data",LOGDRMSRC);
   for(i=0;i<tbPtr->dataSegmentPtrList.count();i++)
     {
       if(!tbPtr->dataSegmentPtrList.at(i)->hasData())
@@ -466,9 +490,18 @@ void sourceDecoder::writeData(transportBlock *tbPtr)
           tbPtr->segmentsReceived++;
         }
     }
-  if(tbPtr->isAlmostComplete()<63) return ;
+  if(tbPtr->isAlmostComplete()<63)
+    {
+      return ;
+    }
+  addToLog("Image already received",LOGDRMSRC);
 
-  if(!tbPtr->lastSegmentReceived) return;
+  if(!tbPtr->lastSegmentReceived)
+    {
+      addToLog("Not lastSegmentReceived",LOGDRMSRC);
+
+      return;
+    }
   checkSaveImage(ba,tbPtr);
 }
 
@@ -476,38 +509,25 @@ void sourceDecoder::writeData(transportBlock *tbPtr)
 void sourceDecoder::saveImage(transportBlock *tbPtr)
 {
   int i;
-  eftpError ftpResult;
   QByteArray hybridBa;
-
-  QImage test;
-  displayTextEvent *stce;
   displayMBoxEvent *stmb=0;
-  notifyActionEvent *na;
+  QString downloadF;
+  modeCodeTmp=tbPtr->modeCode;
+  callsignTmp=tbPtr->callsign;
 
-
-  rxDRMNotifyEvent *rxne;
-  QString t;
-
-  bool done=false;
-  bool textMode=false;
-  QString downloadF, RxOkF;
-  bool   saveOK=false;
   alreadyDisplayed=true;
   if(tbPtr->alreadyReceived)
     {
+      addToLog("Image already received",LOGDRMSRC);
       return ;
     }
   if(tbPtr->fileName.isEmpty()) return ;
   if(tbPtr->retrieveTries==0) lastAvgSNR=avgSNR;
-
-  rxne = new rxDRMNotifyEvent("");
-  QApplication::postEvent( dispatcherPtr, rxne );  // Qt will delete it when done
-
   isHybrid=false;
   if((tbPtr->fileName.left(3)==".de") || (tbPtr->fileName.left(3)=="de_"))
     {
       isHybrid=true;
-      ftpInterface ftpIntf("Save Image FTP");
+      //ftpInterface ftpIntf("Save Image FTP");
       if((enableHybridRx) && (soundRoutingInput!=soundBase::SNDINFROMFILE))
         {
           addToLog(QString("Hybrid filename %1, attempt %2").arg(tbPtr->fileName).arg(tbPtr->retrieveTries+1),LOGALL);
@@ -518,55 +538,13 @@ void sourceDecoder::saveImage(transportBlock *tbPtr)
             }
           if(hc.deCrypt(&hybridBa))
             {
-              if ((tbPtr->retrieveTries==0) && rxNotifySetup())
+              if ((tbPtr->retrieveTries==0))
                 {
-                  RxOkF = "Dummy"+tbPtr->fileName+"+++."+myCallsign+QString("  %1dB SNR").arg(lastAvgSNR,0,'f',0);
+                  ff->setupFtp("GetHybridImage",hc.host(),hc.port(),hc.user(),hc.passwd(),hc.dir()+"/"+hybridFtpHybridFilesDirectory);
 
-                  if (enableHybridNotify)
-                    {
-                      na=new notifyActionEvent("*+++."+myCallsign+"*","Dummy\r\n", RxOkF);
-                      QApplication::postEvent( dispatcherPtr, na);  // Qt will delete it when done
-
-
-                    }
-                  if (enableHybridNotifySnoop)
-                    {
-                      rxNotifyCheck(tbPtr->fileName);
-                    }
+                  ff->downloadFile(tbPtr->fileName.toLatin1(),downloadF,false,false);
                 }
               tbPtr->retrieveTries++;
-
-              ftpIntf.setupConnection(hc.host(),hc.port(),hc.user(),hc.passwd(),hc.dir()+"/"+hybridFtpHybridFilesDirectory);
-              ftpResult=ftpIntf.downloadFile(tbPtr->fileName.toLatin1(),downloadF);
-              switch(ftpResult)
-                {
-                case FTPOK:
-                break;
-                case FTPERROR:
-                  stmb= new displayMBoxEvent("FTP Error",QString("Host: %1: %2").arg(ftpRemoteHost).arg(ftpIntf.getLastError()));
-                  errorOut() << "ftp error" << ftpRemoteHost << ftpIntf.getLastError();
-                break;
-                case FTPNAMEERROR:
-                  stmb= new displayMBoxEvent("FTP Error",QString("Host: %1, Error in filename").arg(ftpRemoteHost));
-                  errorOut() << "ftp filename error" << ftpRemoteHost << ftpIntf.getLastError();
-                break;
-                case FTPCANCELED:
-                  stmb= new displayMBoxEvent("FTP Error",QString("Connection to %1 Canceled").arg(ftpRemoteHost));
-                  errorOut() << "ftp connection error" << ftpRemoteHost << ftpIntf.getLastError();
-                break;
-                case FTPTIMEOUT:
-                  stmb= new displayMBoxEvent("FTP Error",QString("Connection to %1 timed out").arg(ftpRemoteHost));
-                  errorOut() << "ftp connection timeout error" << ftpRemoteHost << ftpIntf.getLastError();
-                break;
-                }
-              if(ftpResult!=FTPOK)
-                {
-                  if ((ftpResult!=FTPTIMEOUT) || (tbPtr->retrieveTries>1)) {
-                      QApplication::postEvent( dispatcherPtr, stmb );  // Qt will delete it when done
-                      tbPtr->setAlreadyReceived(true);
-                    }
-                  return;
-                }
 
             }
           else
@@ -583,19 +561,58 @@ void sourceDecoder::saveImage(transportBlock *tbPtr)
         {
           downloadF.clear();
         }
-
       tbPtr->newFileName=downloadF;
-
+    }  // end of hybrid.
+  else
+    {
+      displayReceivedImage(false,tbPtr->newFileName);
     }
+  tbPtr->setAlreadyReceived(true);
+}
 
-  if(tbPtr->newFileName.isEmpty()) return ;
-  if(!test.load(tbPtr->newFileName))
+
+void sourceDecoder::slotDownloadDone(bool err,QString filename)
+{
+  if(err) return;
+  displayReceivedImage(true,filename);
+  // send notification
+
+  QFileInfo fi(filename);
+  QString fn=fi.fileName();
+
+  QString notificationFn = "Dummy"+fn+"+++."+myCallsign+QString("  %1dB SNR").arg(lastAvgSNR,0,'f',0);
+  if (enableHybridNotify && !hybridNotifyDir.isEmpty())
+    {
+      ff->changeThreadName("Notify RX");
+      ff->changePath("/"+hc.dir()+"/"+hybridNotifyDir,false);
+      ff->mremove("*+++."+myCallsign+" *",false,false);
+      ff->uploadData("Dummy\r\n",notificationFn,false,true);
+    }
+  else
+    {
+      ff->disconnect();
+    }
+}
+
+
+
+void sourceDecoder::displayReceivedImage(bool isHybrid,QString filename)
+{
+  bool saveOK=false;
+  bool done=false;
+  bool textMode=false;
+  QString t;
+  displayTextEvent *stce;
+
+  QImage test;
+  if(filename.isEmpty()) return ;
+  if(!test.load(filename))
     {
       // maybe text
-      QFileInfo finfo(tbPtr->newFileName);
+      QFileInfo finfo(filename);
       if((finfo.suffix()=="txt") || (finfo.suffix()=="chat") )
         {
-          QFile fi(tbPtr->newFileName);
+          QFile fi(filename);
           if(!fi.open(QIODevice::ReadOnly)) return;
           t=fi.readAll();
           stce= new displayTextEvent(t);
@@ -610,62 +627,34 @@ void sourceDecoder::saveImage(transportBlock *tbPtr)
     }
   if(saveOK)
     {
-      QFileInfo tfi(tbPtr->newFileName);
-
+      QFileInfo tfi(filename);
       QString modestr(tfi.fileName());
       modestr+=QString(" %1dB ").arg(lastAvgSNR,0,'f',0);
       if(isHybrid) modestr+="Hybrid ";
-      modestr+=compactModeToString(tbPtr->modeCode);
-      logBookPtr->logQSO(tbPtr->callsign,"DSSTV",modestr);
-
+      modestr+=compactModeToString(modeCodeTmp);
+      logBookPtr->logQSO(callsignTmp,"DSSTV",modestr);
     }
-  tbPtr->setAlreadyReceived(true);
+
   if(!textMode)
     {
       QString info="";
       if (isHybrid) info+="Hybrid";
-      else       info+=compactModeToString(tbPtr->modeCode);
+      else info+=compactModeToString(modeCodeTmp);
 
-      info+=QString(" %2dB de %3").arg(lastAvgSNR,0,'f',0).arg(tbPtr->callsign);
-
+      info+=QString(" %2dB de %3").arg(lastAvgSNR,0,'f',0).arg(callsignTmp);
       //    slotRXNotification("*** "+info);
-      saveDRMImageEvent *ce = new saveDRMImageEvent(tbPtr->newFileName,info);
+      saveDRMImageEvent *ce = new saveDRMImageEvent(filename,info);
       ce->waitFor(&done);
       QApplication::postEvent(dispatcherPtr, ce);
       while(!done)
         {
+          qApp->processEvents();
           usleep(10);
         }
       checkIt=false;
     }
 }
-bool sourceDecoder::rxNotifySetup()
-{
-  ftpSetupEvent *se;
-  if (!(enableHybridNotify || enableHybridNotifySnoop)) return false;
 
-  se=new ftpSetupEvent (notifyRXIntf,hybridNotifyRemoteHost,hybridNotifyPort,hybridNotifyLogin,hybridNotifyPassword,hybridNotifyRemoteDir+"/RxOkNotifications1");
-
-  QApplication::postEvent( dispatcherPtr, se);  // Qt will delete it when done
-  return true;
-}
-
-
-
-
-bool sourceDecoder::rxNotifyCheck(QString fn)
-{
-  rxDRMNotifyEvent *rxne;
-  notifyCheckEvent *se;
-  rxne = new rxDRMNotifyEvent("");
-  QApplication::postEvent( dispatcherPtr, rxne );
-
-  if (!enableHybridNotifySnoop) return false;
-  se=new  notifyCheckEvent(notifyRXIntf,fn, 5, 45/5, false);
-  QApplication::postEvent( dispatcherPtr,se );
-
-  return true;
-}
 
 bool sourceDecoder::checkSaveImage(QByteArray ba,transportBlock *tbPtr)
 {
@@ -685,12 +674,14 @@ bool sourceDecoder::checkSaveImage(QByteArray ba,transportBlock *tbPtr)
   if((extension=="rs1") || (extension=="rs2") ||(extension=="rs3")||(extension=="rs4"))
     {
       // try to decode
+      addToLog("Try to decode",LOGDRMSRC);
       if(tbPtr->alreadyReceived) return false;
       if(!rsd.decode(ba,fileName,tbPtr->newFileName,baFile,extension,erasureList)) return false;
       baFilePtr=&baFile;
     }
   else
     {
+      addToLog("Check complete",LOGDRMSRC);
       if(!tbPtr->isComplete()) return false;
       tbPtr->newFileName=fileName;
       if((tbPtr->fileName=="bsr.bin")&&(!tbPtr->alreadyReceived))

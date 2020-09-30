@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -45,10 +45,8 @@ class editor : public QMainWindow
 public:
 	editor(QWidget *parent=0,Qt::WindowFlags flags = 0);
 	~editor();
-//	void editImage(QImage *ima);
 	bool openFile(QString fn);
 	void readSettings();
-//  bool render(QImage **im,QString fn);
   bool setImage(QImage *im);
 
 public slots:
@@ -77,7 +75,6 @@ private:
 	QAction *copy;
 	QAction *paste;
 	QAction *deleteAction;
-//	QAction *dump;
 	QMenu *fileMenu;
 	QMenu *editMenu;
 	QFile localFile;

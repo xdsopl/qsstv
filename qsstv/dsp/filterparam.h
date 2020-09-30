@@ -30,11 +30,27 @@
 #define NUMTAPSPOST 0
 #define NUMRXFILTERS 1
 
-#define SYNCBPNUMZEROES 8
-#define SYNCBPNUMPOLES  8
-#define SYNCBPGAIN 103035.237413
-extern const double z_sync_bp[SYNCBPNUMZEROES+1];
-extern const double p_sync_bp[SYNCBPNUMPOLES];
+
+#define SYNCBPNUMZEROES 10
+#define SYNCBPNUMPOLES  10
+#define SYNCBP1200GAIN (2036425.679557*7.7)
+extern const double z_sync_bp1200[SYNCBPNUMZEROES+1];
+extern const double p_sync_bp1200[SYNCBPNUMPOLES];
+
+#define SYNCBP1900GAIN 15076908.367168
+extern const double z_sync_bp1900[SYNCBPNUMZEROES+1];
+extern const double p_sync_bp1900[SYNCBPNUMPOLES];
+
+
+#define SYNCLPTAPS 51
+#define SYNCLPGAIN 26.568143
+extern const double z_sync_lp[SYNCLPTAPS];
+
+
+
+
+
+
 #define VIDEOBPNUMZEROES 8
 #define VIDEOBPNUMPOLES 8
 #define VIDEOBPGAIN 2284.945151
@@ -47,10 +63,6 @@ extern const double p_video_bp[VIDEOBPNUMPOLES];
 #define VIDEOFIRCENTER 1900
 extern const double videoFilterCoefFIR[VIDEOFIRNUMTAPS];
 
-
-#define HILBERTTAPS 121
-#define HILBERTGAIN 1.569474
-extern const double hilbertCoef[HILBERTTAPS];
 
 
 #define DRMHILBERTTAPS 153

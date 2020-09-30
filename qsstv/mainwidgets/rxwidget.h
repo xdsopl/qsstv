@@ -1,10 +1,11 @@
 #ifndef RXWIDGET_H
 #define RXWIDGET_H
-
+#include "ftpfunctions.h"
 #include <QWidget>
 #include <QFrame>
 #include "spectrumwidget.h"
 #include "ui_rxwidget.h"
+
 
 class rxFunctions;
 class imageViewer;
@@ -38,20 +39,14 @@ public:
     ui->drmStatusLineEdit->clear();
     ui->drmStatusLineEdit->appendPlainText(txt);
   }
-  void setDRMNotifyText(QString txt) {
-    //ui->rxNotificationList->clear();
-    ui->rxNotificationList->setPlainText(txt);
-  }
-  void appendDRMNotifyText(QString txt) {
-    ui->rxNotificationList->appendPlainText(txt);
-  }
-  //  drmPSDFrame *psdWdg() {return ui->drmPSDWidget;}
+  void setOnlineStatus(bool online, QString info="");
   drmStatusFrame *statusWdg() {return ui->drmStatusWidget;}
   //  int getFilterIndex();
   void init();
   void setSSTVStatusText(QString txt);
   void setSettingsTab();
   void changeTransmissionMode(int rxtxMode);
+  bool rxBusy();
 
 private slots:
   void slotStart();
@@ -65,6 +60,7 @@ private slots:
   void slotErase();
   void slotSave();
   void slotWho();
+  void slotWhoResult(bool err);
 
 signals:
   void modeSwitch(int);
@@ -76,5 +72,7 @@ private:
   imageViewer *imageViewerPtr;
   void getParams();
   void setParams();
+  ftpFunctions ff;
+  bool doRemove;
 };
 #endif // RXWIDGET_H

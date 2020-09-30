@@ -505,8 +505,14 @@ void CSDCTransmit::DataEntityType9(CVector<_BINARY>& vecbiData, int ServiceID,
   else vecbiData.Enqueue(1 /* 1 */, 1);
 
 	/* Enhancement flag */
-  if (!Parameter.Service[ServiceID].AudioParam.bEnhanceFlag) vecbiData.Enqueue(0 /* 0 */, 1);
-  else 	vecbiData.Enqueue(1 /* 1 */, 1);
+  if (!Parameter.Service[ServiceID].AudioParam.bEnhanceFlag)
+    {
+      vecbiData.Enqueue(0 /* 0 */, 1);
+    }
+  else
+    {
+    vecbiData.Enqueue(1 /* 1 */, 1);
+    }
 
 
 	/* Coder field */

@@ -8,6 +8,7 @@
 #include <QButtonGroup>
 #include <QSpinBox>
 #include <QFileDialog>
+#include <QPushButton>
 #include <QRadioButton>
 #include <QSlider>
 #include <QPlainTextEdit>
@@ -38,9 +39,13 @@ void getValue(QString &s, QPlainTextEdit *input);
 void getValue(int &s, QComboBox *input);
 void getIndex(int &s, QComboBox *input);
 void getValue(QString &s, QComboBox *input);
+void getValue(bool &val, QPushButton *input);
+
 void getValue(int &s, QButtonGroup *input);
+
 void getValue(bool &val, QRadioButton *input);
 void getValue(int &val, QSlider *input);
+void getValue(uint &val, QSlider *input);
 
 void setValue(int val, QLineEdit* output);
 void setValue(double val, QLineEdit* output);
@@ -54,6 +59,7 @@ void setValue(QString s, QPlainTextEdit *input);
 void setValue(int s, QComboBox *input);
 void setIndex(int s, QComboBox *input);
 void setValue(QString s, QComboBox *input);
+void setValue(bool val, QPushButton *input);
 void setValue(int s, QButtonGroup *input);
 void setValue(bool val, QRadioButton *input);
 void setValue(int val, QSlider *input);

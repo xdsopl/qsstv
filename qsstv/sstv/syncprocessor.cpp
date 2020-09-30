@@ -10,34 +10,33 @@
 #include "scope/scopeview.h"
 #endif
 
-#define LINETOLERANCEMODEDETECT 0.015
+#define LINETOLERANCEMODEDETECT 0.008
 #define LINETOLERANCEINSYNC 0.008
-#define SYNCAVGINTEGRATOR 0.09
-#define FILTERDELAYCORRECTION  -18
-#define MINVOLUME 300
+#define FILTERDELAYCORRECTION  +9
+//#define MINVOLUME 80
+#define MINSYNCWIDTHRATIO 0.8
+#define MAXSYNCWIDTHRATIO 2
+
+
+#define NUMBEROFSENSITIVITIES 4
 
 //#define DISABLERETRACE
 //#define DISABLEDETECT
-//#define DISABLENARROW
+#ifdef DISABLENARROW
+#pragma message "NARROW DETECTION DISABLED"
+#endif
 
-ssenitivity sensitivityArray[2]=
+
+ssenitivity sensitivityArray[NUMBEROFSENSITIVITIES]=
 {
-  // minMatchedLines maxLineDistanceModeDetect maxLineDistanceInSync onVolume offVolume  startToMax;
-  {         6,                2,                       7,              3000,    2500 ,      1.5},
-  {         6,                2,                       7 ,             2000,    1800 ,      1.5}
+  // minMatchedLines maxLineDistanceModeDetect maxLineDistanceInSync onRatio offRatio minVolume maxTempOutOfSyncLines maxOutOfSyncLines;
+  {         4,                2,                       7,              0.5,    0.3,   2000,        10, 15},
+  {         4,                2,                       7,              0.5  ,  0.3,   1000,        10, 20},
+  {         4,                2,                       7,              0.5,    0.3,   100,         15, 30},
+  {         4,                2,                       7 ,             0.5,    0.3,   500,         15, 30}
 };
 
 
-//const QString syncStateStr[syncProcessor::SYNCVALID+1]=
-//{
-//  "SYNCOFF",
-//  "SYNCUP",
-//  "SYNCSTART",
-//  "SYNCON",
-//  "SYNCDOWN",
-//  "SYNCEND",
-//  "SYNCVALID"
-//};
 
 
 const QString syncStateStr[syncProcessor::SYNCVALID+1]=
@@ -58,6 +57,17 @@ const QString stateStr[syncProcessor::RETRACEWAIT+1]=
   "Retrace Wait"
 };
 
+/*!
+ * \brief syncProcessor::syncProcessor constructor
+ *
+ * Process the received sync pulses. When a sync pulse is detected, the samplecounter reference is stored in the syncArray.
+ * Concurrent with this processing, the VIS decoding and FSKid decoding is done.
+ *
+ * \param narrow if true then this instance will use narrow settings, else wide settings
+ * \param parent
+ */
+
+
 
 syncProcessor::syncProcessor(bool narrow, QObject *parent) :  QObject(parent),streamDecode(narrow)
 {
@@ -75,7 +85,6 @@ syncProcessor::syncProcessor(bool narrow, QObject *parent) :  QObject(parent),st
     {
       connect(streamDecode.getVisDecoderPtr(),SIGNAL(visCodeNarrowDetected(int,uint)),SLOT(slotVisCodeDetected(int,uint)));
     }
-
 }
 
 syncProcessor::~syncProcessor()
@@ -92,18 +101,17 @@ void syncProcessor::reset()
 {
   sampleCounter=0;
   init();
-  if(!detectNarrow) streamDecode.reset();
-  //  scopeViewerSyncNarrow->clear();
-  //  scopeViewerSyncWide->clear();
+  streamDecode.reset();
+
 #ifndef QT_NO_DEBUG
   scopeViewerSyncNarrow->setCurveName("SYNC VOL",SCDATA1);
-  scopeViewerSyncNarrow->setCurveName("SYNC AVG",SCDATA2);
+  scopeViewerSyncNarrow->setCurveName("INPUT VOL",SCDATA2);
   scopeViewerSyncNarrow->setCurveName("SYNC STATE",SCDATA3);
   scopeViewerSyncNarrow->setCurveName("FREQ",SCDATA4);
   scopeViewerSyncNarrow->setAxisTitles("Samples","int","State");
 
   scopeViewerSyncWide->setCurveName("SYNC VOL",SCDATA1);
-  scopeViewerSyncWide->setCurveName("SYNC AVG",SCDATA2);
+  scopeViewerSyncWide->setCurveName("INPUT VOL",SCDATA2);
   scopeViewerSyncWide->setCurveName("SYNC STATE",SCDATA3);
   scopeViewerSyncWide->setCurveName("FREQ",SCDATA4);
   scopeViewerSyncWide->setAxisTitles("Samples","int","State");
@@ -112,12 +120,16 @@ void syncProcessor::reset()
 }
 
 /**
- * @brief
+ * @brief initialize sync processor
+ * idxStart and idxEnd are set for narrow or wide modes in Auto mode, else idxStart=idxEnd= selected mode
+ * enableSyncDetection is set to false for AVT modes.
  *
  */
 void syncProcessor::init()
 {
-  enabled=true;
+  enableSyncDetection=true;
+  //  syncAvg=0;
+
   if(detectNarrow)
     {
       idxStart=STARTNARROW;
@@ -131,19 +143,14 @@ void syncProcessor::init()
 
   if(sstvModeIndexRx!=0)
     {
-      if((sstvModeIndexRx>=idxStart) && (sstvModeIndexRx<=idxEnd))
-        {
-          idxEnd=idxStart=(esstvMode)(sstvModeIndexRx-1);
-        }
-      else
-        {
-          enabled=false;
-        }
-    }
-  else if(visMode!=NOTVALID)
-    {
-      if((visMode>=idxStart) && (visMode<=idxEnd))
-        idxEnd=idxStart=visMode;
+      //      if((sstvModeIndexRx>=idxStart) && (sstvModeIndexRx<=idxEnd))
+      {
+        idxEnd=idxStart=(esstvMode)(sstvModeIndexRx-1);
+        if((idxStart>=AVT24)&&(idxStart<=AVT94))
+          {
+            enableSyncDetection=false;
+          }
+      }
     }
   visMode=NOTVALID; // and reset the visMode
   syncProcesState=MODEDETECT;
@@ -159,46 +166,40 @@ void syncProcessor::init()
   clearMatchArray();
   currentMode=NOTVALID;
   lineTolerance=LINETOLERANCEMODEDETECT;
-  minMatchedLines=sensitivityArray[squelch].minMatchedLines;
+  minMatchedLines=sensitivityArray[sensitivity].minMatchedLines;
 }
 
-
-//void syncProcessor::reset()
-//{
-//  sampleCounter=0;
-//  init();
-//}
+/**
+ * @brief process the data buffer to extract syncs
+ *
+ *
+ * It calls extract sync and the streamDecode to extarct FSKid and VIS Code
+ *
+ */
 
 
 void syncProcessor::process()
 {
-  //  if(!syncFound) syncQuality=0;
-
-#ifdef DISABLENARROW
-  if(!detectNarrow)
+  if(!detectNarrow) //
     {
-#endif
-      streamDecode.process(freqPtr,sampleCounter);
-      if(enabled)
-        {
-          extractSync();
-        }
-#ifdef DISABLENARROW
+      streamDecode.process(freqPtr,sampleCounter); // only VIS and FSK if not narrow
+      extractSync();
     }
-#endif
 
 #ifndef QT_NO_DEBUG
   if(detectNarrow)
     {
       scopeViewerSyncNarrow->addData(SCDATA1,syncVolumePtr,sampleCounter,RXSTRIPE);
-//      scopeViewerSyncNarrow->addData(SCDATA2,inputVolumePtr,sampleCounter,RXSTRIPE);
+      //      scopeViewerSyncNarrow->addData(SCDATA2,inputVolumePtr,sampleCounter,RXSTRIPE);
+      scopeViewerSyncNarrow->addData(SCDATA2,inputVolumePtr,sampleCounter,RXSTRIPE);
       scopeViewerSyncNarrow->addData(SCDATA3,syncStateBuffer,sampleCounter,RXSTRIPE);
       scopeViewerSyncNarrow->addData(SCDATA4,freqPtr,sampleCounter,RXSTRIPE);
     }
   else
     {
       scopeViewerSyncWide->addData(SCDATA1,syncVolumePtr,sampleCounter,RXSTRIPE);
-//      scopeViewerSyncWide->addData(SCDATA2,inputVolumePtr,sampleCounter,RXSTRIPE);
+      //      scopeViewerSyncWide->addData(SCDATA2,syncAvgPtr,sampleCounter,RXSTRIPE);
+      scopeViewerSyncWide->addData(SCDATA2,inputVolumePtr,sampleCounter,RXSTRIPE);
       scopeViewerSyncWide->addData(SCDATA3,syncStateBuffer,sampleCounter,RXSTRIPE);
       scopeViewerSyncWide->addData(SCDATA4,freqPtr,sampleCounter,RXSTRIPE);
     }
@@ -206,6 +207,14 @@ void syncProcessor::process()
 }
 
 
+/**
+ * @brief extract the syncs from the data
+ *
+ * The function fills in the syncArray en calls validateSync.
+ * If syncProcesState==INSYNC then the out of sync is tracked
+ * The last check is to see if we received a valid VIS code
+ *
+ */
 
 void syncProcessor::extractSync()
 {
@@ -215,9 +224,10 @@ void syncProcessor::extractSync()
     {
       switch(syncState)
         {
-          case SYNCVALID:
-          case SYNCOFF:
-           if(syncVolumePtr[i]>sensitivityArray[squelch].onVolume)
+        case SYNCVALID:
+        case SYNCOFF:
+          if(inputVolumePtr[i]<sensitivityArray[sensitivity].minVolume) break;
+          if(syncVolumePtr[i]>sensitivityArray[sensitivity].onRatio*inputVolumePtr[i])
             {
               syncArray[syncArrayIndex].start=sampleCounter+i;
               syncArray[syncArrayIndex].startVolume=syncVolumePtr[i];
@@ -225,66 +235,66 @@ void syncProcessor::extractSync()
             }
           break;
         case SYNCACTIVE:
-          if(syncVolumePtr[i]<sensitivityArray[squelch].offVolume)
+          if(inputVolumePtr[i]<sensitivityArray[sensitivity].minVolume)
+            {
+              switchSyncState(SYNCOFF,sampleCounter+i);
+              break;
+            }
+          if(syncVolumePtr[i]<sensitivityArray[sensitivity].offRatio*inputVolumePtr[i])
             {
               syncArray[syncArrayIndex].end=sampleCounter+i;
-            if(validateSync())
+              if(validateSync())
                 {
                   switchSyncState(SYNCVALID,sampleCounter+i);
                 }
-                else
+              else
                 {
-                   switchSyncState(SYNCOFF,sampleCounter+i);
+                  switchSyncState(SYNCOFF,sampleCounter+i);
                 }
-          }
-        break;
+            }
+          break;
         }
 #ifndef QT_NO_DEBUG
       syncStateBuffer[i]=(unsigned char)syncState*STATESCALER;
 #endif
     }
 
-  if(syncProcesState==INSYNC)
+  if((syncProcesState==INSYNC) && (enableSyncDetection))
     {
-      lastSync=syncArray[activeChainPtr->last()->to].end;
-      if((sampleCounter+RXSTRIPE-RXSTRIPE/7)>(lastSync+10*samplesPerLine))
+      if(activeChainPtr==NULL)
         {
-          tempOutOfSync=true;
+          switchProcessState(SYNCLOST);
         }
-      missingLines=(uint) round(((sampleCounter+RXSTRIPE-RXSTRIPE/7)-(lastSync+samplesPerLine))/samplesPerLine+1);
-      calcSyncQuality();
-    }
-  else if(visMode!=NOTVALID)
-    {
-      if(sampleCounter>visTimeout)
+      else
         {
-          visMode=NOTVALID;
-          init();
+          lastSync=syncArray[activeChainPtr->last()->to].end;
+          if((sampleCounter+RXSTRIPE-RXSTRIPE/7)>(lastSync+sensitivityArray[sensitivity].maxTempOutOfSyncLines*samplesPerLine))
+            {
+              if(sensitivity!=(NUMBEROFSENSITIVITIES-1)) tempOutOfSync=true; // no temp out of sync if DX
+            }
+          missingLines=(uint) round(((sampleCounter+RXSTRIPE-RXSTRIPE/7)-(lastSync+samplesPerLine))/samplesPerLine+1);
+          calcSyncQuality();
         }
     }
-
-}
-
-void syncProcessor::slotNewCall(QString call)
-{
-  emit callReceived(call);
-  retraceFlag=true;
-}
-
-void syncProcessor::slotVisCodeDetected(int mode,uint visSampleCounter)
-{
-  if((mode>=idxStart) && (mode<=idxEnd))
+  if((visMode>=AVT24)&&(visMode<=AVT94))
     {
-      visMode=(esstvMode)mode;
-      idxStart=idxEnd=(esstvMode)mode;
-      minMatchedLines=3;
-      visTimeout=visSampleCounter+4*getLineLength(visMode,modifiedClock);
-    }
-  else
-    {
+      currentMode=visMode;
+      enableSyncDetection=false;
+      createModeBase();
       visMode=NOTVALID;
+      switchProcessState(INSYNC);
     }
 }
+
+/**
+ * @brief validate sync and build up syncArray
+ *
+ * The function evaluates the sync pulse width and sets the retrace flag
+ * *
+ * \retval false if no valid sync and no further processing is neeeded
+ *         true if a new syncArray entry is added and further processing is necessary
+ */
+
 
 bool syncProcessor::validateSync()
 {
@@ -292,7 +302,7 @@ bool syncProcessor::validateSync()
 #ifndef DISABLERETRACE
   if(syncArray[syncArrayIndex].diffStartEnd()>=MINRETRACEWIDTH)
     {
-      syncArray[syncArrayIndex].retrace=true;
+      syncArray[syncArrayIndex].retrace=true; // simply set retrace true
       result=true;
     }
   else if(syncArray[syncArrayIndex].diffStartEnd()>=MINRETRACEWIDTH/4)
@@ -308,8 +318,10 @@ bool syncProcessor::validateSync()
         }
       result=true;
     }
-#endif
   else if((syncArray[syncArrayIndex].diffStartEnd()>=0.004*SAMPLERATE) && (syncArray[syncArrayIndex].diffStartEnd()<=0.025*SAMPLERATE))
+#else
+  if((syncArray[syncArrayIndex].diffStartEnd()>=0.004*SAMPLERATE) && (syncArray[syncArrayIndex].diffStartEnd()<=0.025*SAMPLERATE))
+#endif
     {
       syncArray[syncArrayIndex].retrace=false;
       //      addToLog(QString("index %1, mid:=%2").arg(syncArrayIndex).arg(syncArray[syncArrayIndex].mid),LOGSYNCACCEPTED);
@@ -317,10 +329,11 @@ bool syncProcessor::validateSync()
     }
   else
     {
-      addToLog(QString("Sync rejected:%1 end:%2 width %3").arg(syncArray[syncArrayIndex].start)
-               .arg(syncArray[syncArrayIndex].end).arg(syncArray[syncArrayIndex].diffStartEnd()),LOGSYNCREJECTED);
+      //      addToLog(QString("Sync rejected:%1 end:%2 width %3").arg(syncArray[syncArrayIndex].start)
+      //               .arg(syncArray[syncArrayIndex].end).arg(syncArray[syncArrayIndex].diffStartEnd()),LOGSYNCREJECTED);
       result=false;
     }
+
   if(result)
     {
       checkSyncArray();
@@ -334,7 +347,7 @@ bool syncProcessor::validateSync()
               //we have a new mode
               if(!createModeBase())
                 {
-                  addToLog("Error creating modeBase",LOGALL);
+                  addToLogDebug("Error creating modeBase",LOGALL);
                   result=false;
                 }
               else
@@ -345,6 +358,7 @@ bool syncProcessor::validateSync()
                   //          syncPosition=currentModePtr->adjustSyncPosition(syncArray[0].end)- FILTERDELAYCORRECTION; // type 1 sync end
                   unsigned int syncCorrected;;
                   syncWidth=getSyncWidth(currentMode ,modifiedClock);
+
                   if(syncArray[0].retrace)
                     {
                       syncCorrected=syncArray[0].end;
@@ -359,13 +373,12 @@ bool syncProcessor::validateSync()
                   slantAdjustLine=6;
                   slantAdjust(true);
                   switchProcessState(INSYNC);
-
                 }
 #endif
             }
           break;
         case INSYNC:
-          trackSyncs();
+          if(enableSyncDetection) trackSyncs();
           break;
         case SYNCLOSTNEWMODE:
         case SYNCLOSTFALSESYNC:
@@ -386,7 +399,14 @@ bool syncProcessor::validateSync()
 
 void  syncProcessor::trackSyncs()
 {
-  //  calcSyncQuality();
+  if(activeChainPtr==NULL)
+    {
+      return;
+    }
+  if(activeChainPtr->count()==0)
+    {
+      return;
+    }
   if(addToChain(currentMode,activeChainPtr->last()->to))
     {
       falseSyncs=0;
@@ -400,6 +420,7 @@ void  syncProcessor::trackSyncs()
             }
         }
     }
+
   else
     {
       falseSyncs++;
@@ -422,30 +443,75 @@ void  syncProcessor::trackSyncs()
     }
 }
 
+void syncProcessor::slotNewCall(QString call)
+{
+  emit callReceived(call);
+  retraceFlag=true;
+}
+
+void syncProcessor::slotVisCodeDetected(int mode,uint visSampleCounter)
+{
+  if((mode>=idxStart) && (mode<=idxEnd))
+    {
+      visMode=(esstvMode)mode;
+      if((visMode>=AVT24)&&(visMode<=AVT94))
+        {
+          enableSyncDetection=false;
+        }
+      addToLogDebug(QString("viscode %1 accepted").arg(visMode),LOGSYNCACCEPTED);
+      idxStart=idxEnd=(esstvMode)mode;
+      minMatchedLines=3;
+      visEndCounter=visSampleCounter;
+    }
+  else
+    {
+      visMode=NOTVALID;
+    }
+}
+
 void  syncProcessor::calcSyncQuality()
 {
   int k;
   quint16 fs=0;
-  syncQuality=10-(missingLines*5/25);
-  //calc false syncs in the last 10
+  quint16 tmp;
+  syncQuality=10;
+  QString str;
+  //calc missing syncs in the last 10
   if(activeChainPtr->count()>=10)
     {
       for(k=activeChainPtr->count()-10;k<activeChainPtr->count()-1;k++)
         {
-          fs+=activeChainPtr->at(k)->to-activeChainPtr->at(k)->from-1;
+          tmp=activeChainPtr->at(k)->to-activeChainPtr->at(k)->from-1;
+          tmp/=activeChainPtr->at(k)->lineSpacing; // this gives us the number of false syncs per line
+          fs+=tmp;
         }
     }
-
-  syncQuality-=((falseSyncs*5)/30);
-  syncQuality-=(falseSlantSync*2);
-  if(syncQuality<0) syncQuality=0;
-  if((syncQuality<=0) && (squelch!=1))
+  if(missingLines>5)
     {
+      str=QString("FS: %1,%2 ").arg(fs).arg(((fs*3)/25));
+      syncQuality-=((fs*3)/25);
+    }
+  if(missingLines>=sensitivityArray[sensitivity].maxOutOfSyncLines)
+    {
+      str+=QString("missingLines: %1 ").arg(missingLines);
+      syncQuality=-1;
+    }
+  syncQuality-=(falseSlantSync*2);
+  str+=QString("falseSlantSync: %1").arg(falseSlantSync);
+  if(syncQuality<0) syncQuality=0;
+  if((syncQuality<=0) && (sensitivity!=(NUMBEROFSENSITIVITIES-1)))  // i.e DX Mode
+    {
+
+      addToLog(QString("syncQuality SYNCLOST %1").arg(str),LOGSYNCQUALITY);
       switchProcessState(SYNCLOST);
     }
-
 }
 
+/**
+ * @brief syncProcessor::calculateLineNumber
+ * @param fromIdx
+ * @param toIdx
+ */
 
 void  syncProcessor::calculateLineNumber(uint fromIdx,uint toIdx)
 {
@@ -482,6 +548,16 @@ void syncProcessor::checkSyncArray()
 }
 
 
+/**
+ * @brief syncProcessor::findMatch
+ The syncArray is filled with valid synPositions.
+ idxStart and idxEnd indicate the sstv modes to compare the sync pulse intervals with.
+
+
+* @return true if match
+
+*/
+
 
 bool syncProcessor::findMatch()
 {
@@ -494,55 +570,67 @@ bool syncProcessor::findMatch()
   QList <int> modeList;
   QList<uint> totalLinesList;
   QList<double> totalFractList;
-  addToLog (QString(" checking match for syncArrayIndex %1 at %2").arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
-  for(i=idxStart;i<=idxEnd;i++)
-    {
-      syncWidth=getSyncWidth((esstvMode)i ,modifiedClock);
-      if(addToMatch((esstvMode)i))
-        {
-          for(j=0;j<matchArray[i].count();j++)
-            {
-              if(matchArray[i][j]->count()>=(int)minMatchedLines)
-                {
-                  changeList.append(matchArray[i][j]);
-                  modeList.append(i);
-                }
 
+  if(enableSyncDetection)
+    {
+      //      addToLog (QString(" checking match for syncArrayIndex %1 at %2").arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
+      for(i=idxStart;i<=idxEnd;i++)
+        {
+          syncWidth=getSyncWidth((esstvMode)i ,modifiedClock);
+          if(addToMatch((esstvMode)i))
+            {
+              for(j=0;j<matchArray[i].count();j++)
+                {
+                  if(matchArray[i][j]->count()>=(int)minMatchedLines)
+                    {
+                      fs=0;
+                      for(k=0;k<matchArray[i][j]->count()-1;k++)
+                        {
+                          fs+=matchArray[i][j]->at(k)->to-matchArray[i][j]->at(k)->from-1;
+                        }
+                      if (fs<20)
+                        {
+                          changeList.append(matchArray[i][j]);
+                          modeList.append(i);
+                        }
+                    }
+
+                }
             }
         }
-    }
-  for (m=0;m<changeList.count();m++)
-    {
-      totalLinesList.append(calcTotalLines( changeList.at(m)));
-      totalFractList.append(calcTotalFract( changeList.at(m)));
-    }
-  for (m=0;m<changeList.count();m++)
-    {
-      if((minTotLines>=totalLinesList.at(m)) && (totalFractList.at(m)<=minFract))
+      for (m=0;m<changeList.count();m++)
         {
-          idx=m;
-          minTotLines=totalLinesList.at(m);
-          minFract=totalFractList.at(m);
+          totalLinesList.append(calcTotalLines( changeList.at(m)));
+          totalFractList.append(calcTotalFract( changeList.at(m)));
         }
-    }
+      for (m=0;m<changeList.count();m++)
+        {
+          if((minTotLines>=totalLinesList.at(m)) && (totalFractList.at(m)<=minFract))
+            {
+              idx=m;
+              minTotLines=totalLinesList.at(m);
+              minFract=totalFractList.at(m);
+            }
+        }
 
-  if(idx>=0)
-    {
-      currentMode=(esstvMode)modeList.at(idx);
-      activeChainPtr=changeList.at(idx);
-      samplesPerLine=getLineLength(currentMode,modifiedClock);
-      fs=0;
-      for(k=0;k<activeChainPtr->count()-1;k++)
+
+      if(idx>=0)
         {
-          fs+=activeChainPtr->at(k)->to-activeChainPtr->at(k)->from-1;
+          if(visMode!=NOTVALID)
+            {
+              currentMode=visMode;
+            }
+          else
+            {
+              currentMode=(esstvMode)modeList.at(idx);
+            }
+
+          activeChainPtr=changeList.at(idx);
+          samplesPerLine=getLineLength(currentMode,modifiedClock);
+          cleanupMatchArray();
+          return true;
         }
-      if (fs>20)
-        {
-          clearMatchArray();
-          return false;
-        }
-      cleanupMatchArray();
-      return true;
+      return false;
     }
 
   return false;
@@ -573,6 +661,11 @@ double syncProcessor::calcTotalFract(modeMatchList *mlPtr)
 
 }
 
+/**
+ * @brief syncProcessor::addToMatch
+ * @param mode sstv mode to be evaluated
+ * @return true if added to chain
+ */
 
 bool syncProcessor::addToMatch(esstvMode mode)
 {
@@ -591,40 +684,42 @@ bool syncProcessor::addToMatch(esstvMode mode)
 }
 
 
+
+
+
+
 bool syncProcessor::addToChain(esstvMode mode,  uint fromIdx)
 {
   int i;
   double fract;
-  quint16 lnbr;
+  quint16 lineSpacing;
 
   samplesPerLine=getLineLength(mode,modifiedClock);
   
-  if(!lineCompare(samplesPerLine,fromIdx,syncArrayIndex,lnbr,fract))
+  if(!lineCompare(samplesPerLine,fromIdx,syncArrayIndex,lineSpacing,fract))
     {
       return false;
     }
 
 
-  if((syncArray[syncArrayIndex].diffStartEnd()<syncWidth*0.75)
-     || (syncArray[syncArrayIndex].diffStartEnd()>syncWidth*2)
-     || (syncArray[fromIdx].diffStartEnd()<syncWidth*0.75))
+  if((syncArray[syncArrayIndex].diffStartEnd()<syncWidth*MINSYNCWIDTHRATIO)
+     || (syncArray[syncArrayIndex].diffStartEnd()>syncWidth*MAXSYNCWIDTHRATIO)
+     || (syncArray[fromIdx].diffStartEnd()<syncWidth*MINSYNCWIDTHRATIO))
     {
 
       return false;
     }
 
-  if (syncArray[fromIdx].diffStartEnd()>syncWidth*2)
+  if (syncArray[fromIdx].diffStartEnd()>syncWidth*MAXSYNCWIDTHRATIO)
     {
       if(fromIdx!=0 || !syncArray[0].retrace)
         {
           return false;
         }
     }
-
-
   if(syncProcesState==MODEDETECT)
     {
-      if(lnbr>sensitivityArray[squelch].maxLineDistanceModeDetect)
+      if(lineSpacing>sensitivityArray[sensitivity].maxLineDistanceModeDetect)
         {
           return false;
         }
@@ -634,8 +729,8 @@ bool syncProcessor::addToChain(esstvMode mode,  uint fromIdx)
   if(matchArray[mode].count()==0) // we don't have a chain yet
     {
       matchArray[mode].append(new modeMatchList);
-      matchArray[mode][0]->append(new smatchEntry(fromIdx,syncArrayIndex,lnbr,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
-      addToLog(QString("Match: mode=%1,new chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(matchArray[mode].count()-1).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
+      matchArray[mode][0]->append(new smatchEntry(fromIdx,syncArrayIndex,lineSpacing,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
+      //      addToLog(QString("Match: mode=%1,new chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(matchArray[mode].count()-1).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
     }
   else
     {
@@ -648,8 +743,8 @@ bool syncProcessor::addToChain(esstvMode mode,  uint fromIdx)
                 {
                   currentModeMatchChanged=true;
                 }
-              matchArray[mode][i]->append(new smatchEntry(fromIdx,syncArrayIndex,lnbr,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
-              addToLog(QString("Match: mode=%1,chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(i).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
+              matchArray[mode][i]->append(new smatchEntry(fromIdx,syncArrayIndex,lineSpacing,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
+              //              addToLog(QString("Match: mode=%1,chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(i).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
               found=true;
               break;
             }
@@ -657,8 +752,8 @@ bool syncProcessor::addToChain(esstvMode mode,  uint fromIdx)
       if(!found)
         {
           matchArray[mode].append(new modeMatchList);
-          matchArray[mode].last()->append(new smatchEntry(fromIdx,syncArrayIndex,lnbr,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
-          addToLog(QString("Match: mode=%1,new chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(matchArray[mode].count()-1).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
+          matchArray[mode].last()->append(new smatchEntry(fromIdx,syncArrayIndex,lineSpacing,fract,syncArray[fromIdx].end,syncArray[syncArrayIndex].end));
+          //          addToLog(QString("Match: mode=%1,new chain=%2 syncIndex=%3 end=%4").arg(getSSTVModeNameShort(mode)).arg(matchArray[mode].count()-1).arg(syncArrayIndex).arg(syncArray[syncArrayIndex].end),LOGSYNCMATCH);
         }
       
     }
@@ -712,20 +807,6 @@ void syncProcessor::cleanupMatchArray()
             }
         }
     }
-
-  //  if(syncArray[0].retrace)
-  //    {
-  //      if((currentMode==S1) || (currentMode==S2))
-  //        {
-  //          //check if this is a valid retrace
-  //          // prepend active chainPtr with the retrace position
-  //          activeChainPtr->prepend(new smatchEntry(0,activeChainPtr->at(0)->from ,lnbr,fract,syncArray[0].end,syncArray[activeChainPtr->at(0)->to].end));
-  //        }
-  //    }
-
-
-
-
 
   for(i=0;i<activeChainPtr->count();i++)
     {
@@ -787,6 +868,10 @@ void syncProcessor::deleteSyncArrayEntry(uint entry)
             }
           if(matchArray[i][j]->count()==0)
             {
+              if(activeChainPtr==matchArray[i][j])
+                {
+                  activeChainPtr=NULL;
+                }
               delete matchArray[i].takeAt(j);
             }
           else
@@ -803,24 +888,39 @@ void syncProcessor::deleteSyncArrayEntry(uint entry)
 }
 
 
+/**
+ * @brief syncProcessor::recalculateMatchArray
+ * \todo recalculate
+ */
 
 void syncProcessor::recalculateMatchArray()
 {
 }
 
+
+/**
+ * @brief syncProcessor::lineCompare
+ * @param samPerLine samples per line
+ * @param srcIdx from sync array entry
+ * @param dstIdx to sync array entry
+ * @param lineNumber number of lines
+ * @param fraction fractional part
+ * @return true if a match for that line (i.e fractional part is smaller than lineTolerance
+ */
+
+
 bool syncProcessor::lineCompare(DSPFLOAT samPerLine, int srcIdx, int dstIdx, quint16 &lineNumber, double &fraction)
 {
   double delta;
-  double intPart;
   delta=(double)(syncArray[dstIdx].end-syncArray[srcIdx].end);
-  fraction=modf(delta/samPerLine,&intPart);
-  if(fraction>=0.5)
-    {
-      fraction=(1-fraction);
-      intPart+=1.;
-    }
-  fraction=fraction/intPart;
-  lineNumber=(int)intPart;
+
+  lineNumber=(delta+samPerLine/2.) /samPerLine;
+  fraction=(double)lineNumber-delta/samPerLine;
+  if(fraction<0) fraction=-fraction;
+  //  if(fraction<lineTolerance)
+  //  addToLog(QString("Lnbr: %1, fract: %2, delta: %3 src: %4,dest: %5, OK %6")
+  //           .arg(lineNumber).arg(fraction).arg(delta).arg(srcIdx).arg(dstIdx).arg(fraction<lineTolerance)
+  //           ,LOGSYNCCOMP);
   return (fraction<lineTolerance);
 }
 
@@ -939,16 +1039,8 @@ void syncProcessor::regression(DSPFLOAT &a,DSPFLOAT &b,bool initial)
   sum_x=sum_y=sum_xx=sum_xy=a=b=0;
   unsigned int endZero;
   unsigned int tempCount=0;
-  //  if(currentMode==S1 || currentMode==S2)
-  //    {
-  //      j=1;
-  //      endZero=syncArray[1].end-samplesPerLine;
-  //    }
-  //  else
-  {
-    j=0;
-    endZero=syncArray[0].end;
-  }
+  j=0;
+  endZero=syncArray[0].end;
   for(;j<count;j++)
     {
 
@@ -1029,7 +1121,6 @@ bool syncProcessor::slantAdjust(bool initial)
 
       return true;
     }
-
   return false;
 }
 

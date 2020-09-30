@@ -10,7 +10,8 @@
 #include "hybridcrypt.h"
 #include "drmtransmitter.h"
 #include "reedsolomoncoder.h"
-#include "ftp.h"
+#include "ftpthread.h"
+#include "ftpfunctions.h"
 
 class imageViewer;
 
@@ -41,8 +42,6 @@ public:
   bool initDRMImage(bool binary, QString fileName);
   void updateTxList();
   void who();
-  void setOnlineStatus(bool online, QString info="");
-  
   void sendBSR(QByteArray *p,drmTxParams dp);
   int processFIX(QByteArray bsrByteArray);
   void initDRMBSR(QByteArray *ba);
@@ -59,16 +58,13 @@ public:
  double calcTxTime(int overheadTime);
  void clearLastHybridUpload();
 
-signals:
 
 private slots:
 //  void rxNotification(QString info);
-  void slotWhoResult();
 
 private:
     void runRx();
-    bool ftpDRMHybridNotifyCheck(QString fn);
-    void setupStatusIntf();
+    void ftpDRMHybridNotifyCheck(QString mask);
     drmTransmitter *txDRM;
     QList <txSession> txList;
     drmTxParams drmTxParameters;
@@ -79,7 +75,7 @@ private:
     QByteArray baDRM;
     QString lastHybridUpload;
     QTemporaryFile ftmp;
-
+    ftpFunctions ff;
 };
 
 #endif // DRMTX_H

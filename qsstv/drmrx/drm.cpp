@@ -155,4 +155,6 @@ float avgSNR;
 float lastAvgSNR;
 bool avgSNRAvailable;
 QString drmCallsign;
+bool drmBusy;
+
 

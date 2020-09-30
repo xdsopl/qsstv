@@ -10,6 +10,9 @@
 extern "C" int write_block(hamlib_port_t *p, const char *txbuffer, size_t count);
 extern "C" int read_block(hamlib_port_t *p, char *rxbuffer, size_t count);
 
+#define RIGCMDTRIES 4
+
+
 
 bool model_Sort(const rig_caps *caps1,const rig_caps *caps2);
 
@@ -50,7 +53,7 @@ public:
   bool getFrequency(double &frequency);
   bool setFrequency(double frequency);
   bool getMode(QString &mode);
-  bool setMode(QString mode);
+  bool setMode(QString mode, QString passBand);
   int getModelNumber(int idx);
   int getRadioModelIndex();
   bool getRadioList(QComboBox *cb);

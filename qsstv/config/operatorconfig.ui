@@ -7,28 +7,13 @@
     <x>0</x>
     <y>0</y>
     <width>680</width>
-    <height>272</height>
+    <height>279</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>Form</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
-   <property name="spacing">
-    <number>1</number>
-   </property>
-   <property name="leftMargin">
-    <number>0</number>
-   </property>
-   <property name="topMargin">
-    <number>0</number>
-   </property>
-   <property name="rightMargin">
-    <number>0</number>
-   </property>
-   <property name="bottomMargin">
-    <number>0</number>
-   </property>
    <item>
     <layout class="QHBoxLayout" name="_4">
      <item>
@@ -282,6 +267,13 @@
     </widget>
    </item>
    <item>
+    <widget class="QLabel" name="label">
+     <property name="text">
+      <string>Use only a-z A_Z  0-9 and  _      no spaces and no special characters</string>
+     </property>
+    </widget>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
       <widget class="QLabel" name="onlineStatusLabel">
@@ -296,7 +288,7 @@
         <number>120</number>
        </property>
        <property name="placeholderText">
-        <string>antenna, radio, operating freq or other info</string>
+        <string>e.g. locator_antenna_power</string>
        </property>
       </widget>
      </item>

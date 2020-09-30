@@ -1,5 +1,5 @@
-n/***************************************************************************
- *   Copyright (C) 2000-2011 by Johan Maes                                 *
+/***************************************************************************
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -19,33 +19,40 @@ n/***************************************************************************
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 
-/** \file */
 
 // Documentation
-/*! \mainpage QSSTV 9.2
+/*! \mainpage QSSTV 9.3 and 9.4
 \author Johan Maes ON4QZ
 
 \section intro_sec Introduction
 
-QSSTV 9 is a program for receiving and transmitting SSTV and HAMDRM (sometimes called DSSTV). It is compatible with most of MMSSTV and EasyPal<br>
+QSSTV is a program for receiving and transmitting SSTV and HAMDRM (sometimes called DSSTV). It is compatible with most of MMSSTV and EasyPal<br>
 
 
-!!!  ALSO READ THE FAQ AT http://users.telenet.be/on4qz/qsstv_9/faq.html !!!
+!!!  ALSO READ THE FAQ AT http://users.telenet.be/on4qz/qsstv/faq.html !!!
 
 This manual is divided in the following sections:
 - \subpage whatsnew
 - \subpage changelog
 - \subpage installation
 - \subpage gettingstarted
+- \subpage config
+- \subpage volume
+- \subpage calib
 - \subpage statusbar
 - \subpage imagepopup
 - \subpage RXSSTV
 - \subpage TXSSTV
 - \subpage RXDRM
 - \subpage TXDRM
+- \subpage drmmodes
 - \subpage fixdrm
+- \subpage spectrumwf
 - \subpage gallery
-- \subpage editor
+- \subpage editor93
+- \subpage editor94
+- \subpage macros Macro Text
+- \subpage repeater
 - \subpage externalprog
 - \subpage todo1
 - \subpage credits
@@ -56,9 +63,20 @@ Johan ON4QZ
 
 
 \page whatsnew What's New
+
+QSSTV 9.4.x has the following new features compared to QSSTV 9.3.x
+- improved template editor
+     (PLease run all your templates through the new editor to allign items correctly and save them again as a template with the same name)
+
+QSSTV 9.3.x has the following new features compared to QSSTV 9.2.x
+- Repeater functions are implemented now (both SSTV and DRM).
+- Improved FFT waterfall
+- Hamlib interface with PKTLSB, PKTUSB and PKTFM
+- bug fixes
+
 QSSTV 9.2.x has the following new features compared to QSSTV 8.2.x
 
-- Build on top QT 5.x ( and also compatible with Qt 4.8)
+- Build on top QT 5.x (dropped testing QT4 compatibility)
 - Better synchronization in SSTV mode
 - New SSTV narrow band modes (MP73-N,MP110-N,MP140-N,MC110-N,MC140-N,MC180-N)
 - Changed GUI layout
@@ -71,10 +89,61 @@ QSSTV 9.2.x has the following new features compared to QSSTV 8.2.x
 - Editor/templates:  multi-line inputs for x,y and z
 - Pulse audio direct interface
 
-
-
-
 \page changelog Change log
+
+\li 20190804 QSSTV 9.4.4
+    - removed auto declaration in basicgraphicitem.cpp (needs C++11)
+
+\li 20190803 QSSTV 9.4.3
+    - added -Wno-implicit-fallthrough to qsstv.pro
+    - macro text \%s (SNR) is now supported in template
+    - change in Test FTP Connections
+    - improved sync detection in SSTV mode
+    - documentation update
+    - lowered audio level of WF ID
+    - a number of small bug fixes
+
+
+\li 20190506 QSSTV 9.4.2
+    - replaced [[fallthrough]] statements for older compilers.
+
+\li 20190505 QSSTV 9.4.1
+    - redesign of the template editor
+    - fixed template image corruption when image Fit mode was selected.
+    - use of transparent images fixed (imageBackgroundColor (see Config GUI) is used to process transparency)
+    - removed c++11 Config option in qsstv.pro. Eliminated dependencies on c++11 to commpile with older compilers.
+
+
+\li 20190418 QSSTV 9.3.3
+  - fixed api documentation generation
+
+\li 20190418 QSSTV 9.3.2
+ - complete rewrite of the FTP interfaces. They now run in a seperate thread
+ - removed Hybrid notify config. All hybrid configurations are in one tab: Hybrid
+ - size of recorded wav files was internally set to 0, fixed.
+ - tx audio to wav file was output in mono with half the samples -> fixed
+ - scaling of images in sstv tx mode -> fixed
+ - show image with template when loading new image ->fixed
+ - callsign was not set/send in DRM tx
+ - new FFT implementation
+ - compression in DRM now based on size in stead of ratio
+ - fix error in Reed-Solomon decode when no erasures found
+ - repeater functions implemented
+ - fixed bug in AVT24-AVT90-AVT94
+ - removed use VIS option in SSTV (now when a VIS code is detected, the mode is restricted to that VIS mode)
+ - added confirmation options for delete files and program exit in gui configuration
+ - more testing on raspberry Pi 3 model B. (compilation and execution OK)
+ - added PKTLSB, PKTUSB and PKTFM in frequency config modulation
+ - added passband to frequency settings
+ - minor bug fixes
+
+\li 20181226 QSSTV 9.2.8
+    - pulse audio selection had some bugs -> fixed
+
+\li 20180504 QSSTV 9.2.7
+  - Right clicking in Galery window on empty image segfaults: fixed
+  - updated some documentation typo's (Thanks Marinus DJ0MBA)
+  - compiler warnings cleanup
 
 \li 20170817 QSSTV 9.2.6
   - Changed the .pro file for autodetecing correct libopenjpg2 (DL1JBE -Tom)
@@ -84,8 +153,6 @@ QSSTV 9.2.x has the following new features compared to QSSTV 8.2.x
   - Camera support for Raspberry PI Cam
   - fixed audio loopback use
   - fixed transmission after stop, image was not restarted at top
-
-
 
 \li 20161022 QSSTV 9.2.5
 - Screen size reduced for use with smaller screens-fixed.
@@ -105,8 +172,6 @@ QSSTV 9.2.x has the following new features compared to QSSTV 8.2.x
 - Added new features (such a save waterfall image) implmented by Mike, VK6M
 - Todo: update the documentation !
 
-
-
 \li 20160929 QSSTV 9.2.2
 - added CTRL_F keyboard shortcut to switch to and from full screen. This is mainly used on low resolution screens where the top and/or
 bottom taskbars are masking part of the QSSTV window.
@@ -115,7 +180,6 @@ bottom taskbars are masking part of the QSSTV window.
 - added low Resolution mode
 - changed SSTV sync detection
 - some minor bug fixes
-
 
 \li 20160703 QSSTV 9.1.8
  - The program uses jp2 files for sending images in DRM mode. The file extensions were not correct. ->fixed
@@ -126,7 +190,6 @@ bottom taskbars are masking part of the QSSTV window.
  - Screen size reduced to 791x684 for use with smaller screens.
  - Added voice/data port selection for PTT (thanks to David VK3DCU)
 
-
 \li 20160701 QSSTV 9.1.7
  - Normally the audio is generated on the left channel. There is now an option in the soundconfig
  to swap left and right channel. Some radios like the TS590 are using the right audio channel via USB (test done by PE1DFQ - Gerard).
@@ -134,7 +197,6 @@ bottom taskbars are masking part of the QSSTV window.
  - Name of ID button in the lower status bar changed to WF ID (waterfall ID) to avoid confusion with CW ID.
  - Fixed bug: Waterfall font size was not correctly saved.
  - Added "Bold" option for Waterfall font.
-
 
 \li 20160628 QSSTV 9.1.6
  - ftp transfer crashes when transmitting in hybrid mode-> solved
@@ -187,7 +249,6 @@ bottom taskbars are masking part of the QSSTV window.
 - first release
 
 
-
 \page installation Installation
 
 Warning: from version 9.1.1 and higher,  Jasper library is dropped and openjpeg is used
@@ -197,7 +258,7 @@ We need openjpeg2 (e.g. libopenjpeg2.1 or higher) and not libopenjpeg 1.5
 Before you can compile QSSTV make sure that you have installed the following software
 - g++
 - libfftw3-dev
-- qt5-default (qt4-default)
+- qt5-default
 - hamlib-dev
 - libasound2-dev
 - libpulse-dev
@@ -205,13 +266,10 @@ Before you can compile QSSTV make sure that you have installed the following sof
 - libopenjp2-7-dev
 - libv4l-dev
 
-
-QSSTV is compatible with Qt 4.8.6 but mostly tested on Qt 5.4.x or higher
-
 <p>On Ubuntu, Debian or Mint you can type:
 
 <pre>sudo apt-get install g++ libfftw3-dev qt5-default libpulse-dev</pre>
-<pre>sudo apt-get install hamlib-dev libasound-dev  libv4l-dev</pre>
+<pre>sudo apt-get install hamlib-dev libasound2-dev  libv4l-dev</pre>
 <pre>sudo apt-get install libopenjp2-7 libopenjp2-7-dev</pre>
 
 If you don't find libopenjp2-7 you can download it with the follwing commands if you're running a Debian derived distribution:
@@ -227,7 +285,7 @@ First install the library and then the development package. This is the case for
 
 
 For specific instructions on installation on different distributions: have a look at the FAQ
-html http://users.telenet.be/on4qz/qsstv_9/faq.html
+html http://users.telenet.be/on4qz/qsstv/faq.html
 
 \section step2 Step 2: Getting the software
 
@@ -236,11 +294,11 @@ Download the latest tar file to a local directory (e.g. ~/Downloads)
 
 \section step3 Step 3: Compile and Install the software
 Go to the directory you have chosen and extract the tar file.
-Note: replace the 9.1.1 with the appropriate version you have downloaded
+Note: replace the 9.4.2 with the appropriate version you have downloaded
 <pre>
 >cd ~/Downloads
->tar -xvzf qsstv_9.1.1.tar.gz
->cd qsstv_9.1.1
+>tar -xvzf qsstv_9.4.2.tar.gz
+>cd qsstv_9.4.2
 >qmake
 >make
 >sudo make install
@@ -249,26 +307,30 @@ Note: replace the 9.1.1 with the appropriate version you have downloaded
 You can now run the program by typing qsstv at the prompt of a terminal session, or make a short cut on your desktop.
 <pre>>qsstv</pre>
 If you have problems compiling the software, please give as much information as possible but at least:
-- Linux Distribution (e.g. Ubuntu 12.10)
+- Linux Distribution (e.g. Ubuntu 18.04)
 - QT Version (e.g Qt 5.4.1)
 - Dump of the compile process showing the error
 
 \page gettingstarted Getting Started
 
 The program is build around 3 windows
-- Receive window:  Receive functions and configuration
-- Transmit window: Transmit functions and camera control
+- Receive window:  Receive functions for SSTV and DRM
+- Transmit window: Transmit functions for SSTV and DRM and camera control
 - Gallery window:  History of received images, transmit images and templates
+<br>
 The program will remember the last position and the size of each window on restart.
 
-\section config Configuration
+Start the program and follow the configuation and calibration instructions below.
 
-Before we can use QSSTV you need to do some configuration.
+\page config Configuration
+
+Before we can use QSSTV you need to set some configuration options.
 \image html config.png
 The configuration tool is accessed through the "Options" menu in the receive window.
 The following tabs are available
 <br><br>
-\li Personal Settings
+\anchor operator
+\li Operator Settings
 <br><br>
 \image html config1.png
 <br><br>
@@ -277,8 +339,10 @@ The following tabs are available
 - Last Name
 - QTH
 - Locator (Grid Square)
-<br>This information can also be used in templates (see also \ref editor)
-<br><br>
+<br>The above information can also be used in templates (see also \ref editor93 \ref editor94)
+<br>
+- Allow other users to see your online status via the notification server
+<br>The text will be added to the notification send to the hybrid server<br>
 
 \li Directories
 <br><br>
@@ -289,6 +353,7 @@ The following tabs are available
 - TX Images: directory for images to transmit
 - Templates: directory where the template files are stored
 - Audio Records: directory for audio files (where you save/read recorded audio files)
+- Save TX images in TX SSTV or TX DRM directory: if selected the TX image will be saved
 - Documentation: URL of the user manual (if you copied the manual locally then you can point to it with e.g. file:///usr/share/doc/qsstv/manual
 <br><br>
 
@@ -305,6 +370,8 @@ Push the push button to select the colour selector.
 - Low Resolution: Select this option if your display is for example 800x480. This options sets the maximum vertical resolution of QSSTV to less than 480 lines. It therefore removes some features
 from the receive window (Rx Notification Window in DRM) and the transmit window (Image replay Preview and TX Notifications in DRM mode).
 You can toggle to and from full screen by using the CTRL_F key combination.
+- Ask for confirmation when deleting file: When you delete a file from the gallery it will ask for confirmation before deleting the file, otherwise it will simply delete the file.
+- Ask for confirmation when closing QSSTV: if checked, ask: "Are you sure to exit QSSTV" before closing the program
 
 
 <br><br>
@@ -312,11 +379,12 @@ You can toggle to and from full screen by using the CTRL_F key combination.
 \li Audio
 <br><br>
 \image html config4.png
-<br><br>
+<br>
+See also \ref volume
+<br>
 - ALSA Input Audio Device : depending on your hardware (e.g. default,hw:0,0)
 - ALSA Output Audio Device : depending on your hardware (e.g. default,hw:0,0)
 - PulseAudio: native pulse audio interface
-<br>Note: <b> Most distributions use Pulse Audio interface.. You can select the audio card settings through the audio applet by right clicking on the Speaker icon and selecting the Sound Preferences</b>
 - RX Clock frequency : clock used while receiving SSTV images,(see also \ref calib)
 - TX Clock frequency : clock used while transmitting SSTV images,(see also \ref calib)
 - Sound Input routing
@@ -363,15 +431,26 @@ Example: IC-706MKIIG via a cat interface such as interfaceOne.
 \anchor flrigconfig
 - Enable XMLRPC
  This allows you to connect to the Flrig program using the XMLRPC protocol. Flrig will handle all the communication with the transceiver (including PTT).
+ The Flrig version must be lower then 1.3.4x
+
+
 - TX Delay: The program will wait for the selected delay before transmitting any audio.
 
 
 Note: The option Enable XMLRPC excludes the use of hamlib.
 
-A sample set-up of Flrig is shown below.
+A sample set-up of Flrig (version <1.3.4x)is shown below.
 <br><br>
 \image html flrig1.png
 <br><br>
+
+You can now also connect via Hamlib to Flrig (model number 4).
+There are two prerequisites
+- Hamlib version 3
+- Flrig 1.3.4x or higher
+\image html cat_flrig.png
+<br>
+
 
 
 
@@ -388,15 +467,23 @@ A sample set-up of Flrig is shown below.
 
 
 \li Repeater
-<br><br>
+<br>
+\anchor repAnchor
+
+<br>
 \image html config7.png
 <br><br>
+
 - Enable repeater: enable repeater operation
 - Image Interval (min): interval time before sending one of the Idle Images
 - Repeater TX mode: the mode the repeater will use to send the images
+- Tx Delay(sec):  Wait x seconds after reception of an valid image before repeating the image
+- DRM Image Size (kB) : The maximum size of the image used in DRM mode
 - Idle Image[1-4]: images send by the repeater if there is no activity for more than the interval time
 - Idle Template:template that will be super-imposed on the idle images
 - Repeater Template: template that will be super-imposed on the repeated(received) images
+
+See also \ref repeater
 
 \li FTP
 <br><br>
@@ -405,15 +492,16 @@ A sample set-up of Flrig is shown below.
 This is used to save the received images to an FTP server. The images will also still be saved in the local rx folder.
 - Enable FTP: enable ftp operation
 - FTP Port: default 21
-- Default Image Format: select the image format from the drop down bow (used only in SSTV)
+- Default Image Format: select the image format from the drop down box
 - Remote Hostname: hostname of the ftp server (e.g. myftp.home.net or 192.168.0.1)
 - Remote directory:the ftp server directory where you'll store the images
 - FTP Login name: your login name on the server (can be anonymous)
 - FTP Password: if you need one, otherwise leave blank
 - Image store:
-  - Image1 - image30: The files will be saved under the generic name imageXX, where xx ranges from 1 to 30. When a new image arrives, the old images are shifted down
+  image1 to image30: The files will be saved under the generic name imageXX, where xx ranges from 1 to 30. When a new image arrives, the old images are shifted down
   (i.e. image29 becomes image30, image28 becomes image 29 etc ..) and the new one is stored as image1.
-  -file name: the image (or other type of file) is stored with a file name derived from the mode (SSTV) or from the file name transmitted in DRM.
+- add image format extension: if checked, the xetension is added to the filename (e.g. image2.png)
+- file name: the image (or other type of file) is stored with a file name derived from the mode (SSTV) or from the file name transmitted in DRM.
 
 Note: This FTP server is unrelated to the FTP server for Hybrid Mode.
 
@@ -431,36 +519,42 @@ You will either see a pop-up with "Connection OK" or an error message showing th
 - End Pic: Waterfall text to send at the end of a DRM transmission
 - FIX: Waterfall text to send at the beginning of a DRM retransmission
 - BSR: Waterfall text to send at the beginning of a DRM request for retransmission
-<br> Note: you can also use %%m. This will be replaced by your call sign
+<br> Note: you can also use macros (e.g. %m, %q ...) in the text (see \ref macros "macros")
 
 
 \li Hybrid
 <br><br>
 \image html config10.png
 <br><br>
-- Enable Reception in Hybrid Mode: allows reception of hamDRM in hybrid mode. If this is not enabled, hybrid mode files will not be shown or stored.
+- Enable Reception in Hybrid Mode: allows reception of hamDRM in hybrid mode. If not enabled, hybrid mode files will not be shown or stored.
 - FTP Port: default 21 (cannot be modified at this moment for compatibility with EasyPal)
-- Remote Hostname: hostname of your ftp server
-- Remote directory:the ftp server directory where the stored images are
-- FTP Login name: the login name on the server
-- FTP Password: will be encrypted
+- Send RX Notifications in Hybrid mode: The notifications will be send to the server used by the sender
+- Host: hostname of the ftp server you will use
+- Host: the ftp server where the hybrid images will be send to.
+- Login: the login name on the server
+- Password: will be encrypted
+- Directory: default empty
 
 Login name, password,hostname and directories will be encrypted before being sent on the air.
 
-If you want to use the special server, the directories to store images is relative to the directory HybridFiles1. So first create a top level directory HybridFiles1.
-If you leave the Remote Directory empty, then the files will be placed in the directory HybridFiles1.
-If you put for example "testdir" in the Remote Directory (as shown in the above screen shot), then you need to create testdir under HybridFiles (HybridFiles1/testdir).
+The directories on the FTP server must be created at root level.
+- HybridFiles1 -- where the hybrid files are uploaded
+- RxOkNotifications1 -- where the notification are sent when receiving an DRM image
+- OnlineCallsigns1 -- where the call sign and info text is sent
+
+If a directory is specified (e.g test) then the following directories must be cretaed:
+- test/HybridFiles1
+- test/RxOkNotifications1
+- test/OnlineCallsigns1
 
 QSSTV will not create those directories for you.
 
-EasyPal also use two other directories on the same level as HybridFiles1
-- OnlineCallsigns1
-- RxOkNotifications1
-
-You can create them on your server but they are not used by QSSTV at this moment.
-
 You can test the connection by clicking the Test connection button. It will setup a connection to the server and send a test file to check if all parameters are correct.
 You will either see a pop-up with "Connection OK" or an error message showing the reason of the fail.
+
+There are some public servers you can use.
+Have a look at http://www.easypal.org/
+
 
 \li DRM Profiles
 <br><br>
@@ -470,16 +564,17 @@ Used for quick selection of the most common settings you use in DRM.
 Choose a short name for the profile and make a selection for all the parameters.
 The name will appear in the Profiles drop-down box in the Transmit window for DRM.
 
+See
+
 \li Frequencies
 \anchor configFreq
 <br><br>
 \image html config12.png
 <br><br>
-- List of selectable frequencies. Click Add to add a new combo frequency/mode/modulation. Enter the frequency and select the mode and modulation type.<br>
-To move a frequency/mode/modulation  up or down the list, click first on the entry in the table and then click on one of the arrow buttons.
-
-- Hamlib Data Command: (only used with Hamlib) As far a I know Hamlib does not support switching the Icomxxx to data mode.
-As a result, if you for example selected USB-D1 on a Icom 7600,changing the frequency will switch the rig back to the regular USB (data mode off).<br>
+- List of selectable frequencies. Click Add to add a new combo frequency/mode/modulation/passband. Enter the frequency and select the mode,modulation and passband type.<br>
+To move a frequency/mode/modulation/passband  up or down the list, click first on the entry in the table and then click on one of the arrow buttons.
+- Filter 1 will be selected if PKTxxx is used on ICOM (hamlib limitation).
+- Hamlib Data Command: (only used with Hamlib)
 Hamlib Data Command allows you to send a "raw command" that will be executed when you change frequencies.
 
 - Example: FEFE7AE01A060101FD and Hex button checked: will put the Icom in data mode D1 (LSB, USB or FM) and the Filter 1.
@@ -490,24 +585,57 @@ Hamlib Data Command allows you to send a "raw command" that will be executed whe
 
 - Note 2: Flrig does not support FM data modes.
 
+\page volume Volume Settings
 
+You will not find a volume setting within QSSTV.<br>
+The volume (audio out and audio in) are handled by the OS.<br>
 
-\section calib Calibration
-Note: Calibration is only needed for SSTV mode
+Most distributions use Pulseaudio interface.<br>
+You can select the audio card settings through the audio applet by right clicking on the Speaker icon and selecting the Sound Preferences.<br>
+
+Pulseaudio is the easiest to setup because the audio levels can be set per application.<br>
+Use <b>pavucontrol</b> to setup playback and recording levels.
+\image html pavu_playback.png
+\image html  pavu_rec.png
+
+\page calib SSTV Calibration
+Calibration is only needed for SSTV mode.
+
 All SSTV applications need an accurate and stable clock. The accuracy of a PC clock is not always correct.
 Therefore it's necessary to execute some sort of calibration.
 You need to synchronize your PC with an network time server via the ntp protocol.
 Every Linux distribution has some configuration tool that allows you to install the ntp client. Be sure it's active.
 You can check it with:
 <pre>
->ntpdc -p
+>ntpq -p
 </pre>
+
 
 The selected ntp server should have an asterisk in the first column.
 <pre>
 remote           local      st poll reach  delay   offset    disp
 =======================================================================
 *stratum1dc1.bc  10.119.37.19     2   64  377 0.00386  0.036853 0.06850
+</pre>
+
+
+Newer sytems default install timesyncd instead of ntpd.
+timesyncd connects to the same time servers and works in roughly the same way,
+but is more lightweight and more integrated with systemd.
+The status of timesyncd can be checked by running timedatectl with no arguments.
+<pre>
+>timedatectl
+</pre>
+The output should look like:
+<pre>
+timedatectl
+                      Local time: do 2019-03-14 02:06:04 CET
+                  Universal time: do 2019-03-14 01:06:04 UTC
+                        RTC time: do 2019-03-14 01:06:04
+                       Time zone: Europe/Brussels (CET, +0100)
+       System clock synchronized: yes
+systemd-timesyncd.service active: yes
+                 RTC in local TZ: no
 </pre>
 
 You can now launch the Calibration.<br><br>
@@ -521,7 +649,7 @@ When RX and TX calibration is finished, press the OK button to accept the new va
 
 \page statusbar Statusbar
 \image html statusbar.png
-- Radio Frequency: the current frequency of the radio (only if CAT interface is enabled)
+- Radio Frequency: the current frequency of the radio (only if CAT interface is enabled and there is a connection with the radio, else "No Rig" will be displayed )
 - Drop down menu to set the radio on the selected frequency (only if CAT interface is enabled) (see also \ref configFreq Config freq)
 - WF Text: gives you a selection of user defined text you can send to appear as waterfall text.
 <br><br>
@@ -559,8 +687,6 @@ By right clicking on the images, a pop-up window appears that can have one or mo
 - Properties: displays the image and file properties if available
 
 
-
-
 \page RXSSTV Receive SSTV Window
 \image html rxwidget1.png
 Menu toolbar:
@@ -593,7 +719,7 @@ You may notice a momentary freeze of the image build-up while the program is rec
 - Mode: you can either select AUTO or one of the supported SSTV modes.
 When AUTO is selected, the program will try to determine the mode of the image it is receiving.
 If a specific mode is selected the program will reject all images except if they are transmitted in the selected mode.
-- Signals: Normal and DX.
+- Sensitivity: Low, Normal, High and DX.
 When the Sensitivity is set to DX the signal will run until the end of the image before resynchronization.
 
 
@@ -654,10 +780,9 @@ The text inputs correspond to the following macros:
 \li x %%x - comment1
 \li y %%y - comment2
 \li z %%z - comment3
-\n see also \ref editor
-
+\n see also \ref editor93 \ref editor94
 - The last received image is displayed at the bottom right. It will be updated automatically as
-new images are received. They can be inserted if you use a template containing an "image replay object" see also \ref editor
+new images are received. They can be inserted if you use a template containing an "image replay object" see also \ref editor93 \ref editor94
 <br>
 Right clicking on this image also allows you to load other images for insertion. Use the refresh button to update the main window if necessary.
 
@@ -714,9 +839,14 @@ If the data stream is a text file it will be displayed in a separate window. Jus
 \image html waterfall.png
 Spectrum:<br>
 You can select the spectrum or the waterfall by clicking in this window. In DRM the waterfall gives you better view.
+<br>
 The three markers above the waterfall indicate  the position of the pilot frequencies. This helps tuning the radio to the correct frequency.
-<br><br>
-(8) see \ref RXSSTV
+<br>
+Who is On?
+Information about other station on the hybrid server. There are some
+- The stations must enable : Allow other users to see youtr online status ... see  \ref operator configuration
+
+see \ref RXSSTV
 
 
 \page TXDRM Transmit DRM Window
@@ -743,7 +873,7 @@ Mode Selection
 - Interleave (Short or Long)
 - Protection (Normal or High)
 - QAM (4,16 or 64)
-- Reed Solomon: (rs1, rs2, rs3 or rs4).File encoder for forward error correction. On HF it is recommended to always use Reed Solomon. The most often used is rs2.
+- Reed-Solomon: (rs1, rs2, rs3 or rs4).File encoder for forward error correction. On HF it is recommended to always use Reed-Solomon. The most often used is rs2.
 The higher the number, the more protection but also the more overhead.
 - Profile: quick selection of a profile (i.e. settings of mode,QAM ...) as defined in the Options->Configuration->DRM Profiles)
 <br>
@@ -754,7 +884,7 @@ The TX progress-bar indicates the progress of the transmission.
 
 see also  \ref Control under SSTV TX
 - Last received image will be updated automatically as
-new images are received. They can be inserted if you use a template containing an "image replay object" see also \ref editor
+new images are received. They can be inserted if you use a template containing an "image replay object" see also \ref editor93 \ref editor94
 <br>
 - Compression
 <br><br>
@@ -765,6 +895,41 @@ You can drag the slider to compress the image before it is sent (the original im
 <br>
 Note: This does not include the overhead of the RS-encoding.
 
+\page drmmodes Mode Settings for DRM
+
+Settings for HF and VHF/UHF are very different.
+
+General rules of thumb:<br>
+Mode A: most demanding, used on VHF/UHF<br>
+Mode B: use on HF/VHF/UHF<br>
+MODE E: least demanding, used on HF<br>
+
+QAM 64 : most demanding, used on VHF/UHF in really good conditions<br>
+QAM 16 : used on VHF/UHF in fairly good conditions sometime also on HF<br>
+QAM  4 : least demanding, used on HF <br>
+
+Bandwith:
+- 2.5 kHz: VHF/UHF
+- 2.2 kHz; HF
+
+Protection:
+- Depends on the conditions, leave it on High
+
+Interleave:
+ - leave it on Long on all bands
+
+Reed-Solomon:<br>
+Reed-Solomon provides Forward Error Correction by adding redundant bytes per block of 255 bytes.<br>
+More errors can be corrected when more redundant bytes are used.<br>
+This adds overhead to the transmission.
+
+- RS1 increased by 13%
+- RS2 increased by 33%  most often used
+- RS3 increased by 60%
+- RS4 increased by 99%
+
+Always use Reed-Solomon encoding on HF bands.
+
 
 \page fixdrm Sending FIX in DRM
 \image html fix.png
@@ -774,6 +939,19 @@ You can either send the fix or cancel.<br>
 If the BSR is not for you then the following window will pop-up for a few seconds.
 \image html bsr_nfy.png
 
+\page spectrumwf Spectrum and Waterfall Display
+\image html spectrum_wf.png
+Note: the settings Max dB, Range and AVG do not influence in any way the sensitivity of the reception in SSTV or DRM.
+\image html spectrum1.png
+
+Max dB:
+- defines the audio level at the top of the spectrum display
+
+Range
+- defines the dynamic range in dB to display
+
+Avg:
+- this is the integration factor to smooth the spectrum display. Values are between 0.6 and 1 (0.88 is a good value).
 
 
 \page gallery Gallery
@@ -796,7 +974,7 @@ Some examles
 
 
 
-\page editor Editor
+\page editor93 Editor version 9.2 and 9.3
 The editor can be used for regular image editing and for the creation and editing of template images.
 Template images are used as overlays. They will be dynamically adapted when you select the template in the TX-window.
 While in edit mode, you can change all the attributes (such as size, position, colours etc ...). If you save the canvas as an
@@ -810,6 +988,22 @@ If you hoover over the object you will see the cursor change to a hand-icon (in 
 
 The attributes (line colour, fill colour, gradients etc ..) that are active in the top menu will be used to create the item.
 Object have also a z-component, i.e they can be in front our behind another object. This can be changed by right clicking on the item and use the Arrange selection.
+
+\li File Menu
+- New:    Create a new file
+- Open:   Open an existing file. If the canvas already contains items, new items will be added to the existing ones this allows combining templates. You can use the Clear All function from the Edit Menu
+  to clear the canvas first.
+- Save file ..: Save the file under the same name
+- Save Image file ..: Create an normal image file. All items will be rendered (flattened) to create one single image.
+- Save Template ..: Create template file. All items will be editable when the file is loaded again.
+- Quit Exit the editor
+
+
+\li Edit Menu
+- Delete: Delete the selected items
+- Copy: Copy the selected items
+- Paste: Paste the copied items.
+- Clear all: Clear the canvas completely
 
 
 \image html editor_1.png
@@ -876,6 +1070,121 @@ Here's an example of the editor using macros and the result in the transmitter.<
 <br><br>
 \image html transmitdrm.png
 
+See also \ref macros
+
+
+\page editor94 Editor version 9.4
+The editor can be used for regular image editing and for the creation and editing of template images.
+Template images are used as overlays. They will be dynamically adapted when you select the template in the TX-window.
+While in edit mode, you can change all the attributes (such as size, position, colours etc ...). If you save the canvas as an
+image, the scene will be rendered (i.e. flattened) and become a single image object. If you save the canvas as a template, all objects
+will be accessible again when loaded.
+
+\li File Menu
+- New:    Create a new file
+- Open:   Open an existing file. If the canvas already contains items, new items will be added to the existing ones this allows combining templates. You can use the Clear All function from the Edit Menu
+  to clear the canvas first.
+- Save file: Save the file under the same name
+- Save as Image: Create an normal image file. All items will be rendered (flattened) to create one single image.
+- Save as Template: Create template file. All items will be editable when the file is loaded again.
+- Quit Exit the editor
+
+
+\li Edit Menu
+- Delete: Delete the selected items
+- Copy: Copy the selected items
+- Paste: Paste the copied items.
+- Clear all: Clear the canvas completely
+
+<br>
+To create an object, click on the left menu to select the type of object (e.g circle) and then click on the canvas where you want the object positioned.
+Just click on an item to select it. A outline of the item will be shown by highlighting the item.
+If you hoover over the object you will see the cursor change to an arrow_forbidden icon if the item is locked;
+<br>
+A selected item will be highlighted and resizing handles and rotate handle are shown.
+Text items only have the rotate handle. Resizing of text is only done through the font settings.
+
+- resize
+\image html editor_resize.png
+- rotate
+\image html editor_rotate.png
+\image html editor_rotate2.png
+- rotate text
+\image html editor_text_rotate.png
+
+The attributes (line colour, fill colour, gradients etc ..) that are active in the top menu will be used to create the item.
+Object have also a z-component, i.e they can be in front our behind another object. This can be changed by right clicking on the item and use the Arrange selection.
+
+
+\image html editor_1b.png
+\li Top menu 1
+- Image Size: Select the size of the image: the outline of the image will be shown on the canvas.
+\image html editor_image_sizeb.png
+- Font: drop down box where you can select the text font
+- Font size: text size
+- Bold : bold text
+- Italic: italic text
+- Underline: underlined text
+- Pen width: width of lines in number of pixels (used with borders and text outline)
+\li Top menu 2
+- Fill: Fill colour drop down menu
+- Line: Line colour drop down menu
+- Gradient: Gradient selection menu
+
+\li Left menu
+- \image html fcircle.png
+ create filled circle/ellipse
+- \image html frect.png
+ create filled rectangle
+-\image html line.png
+ create line
+-\image html camera.png
+insert image
+-\image html replay.png
+ insert replay image place-holder. When the template will be loaded in the TX-window, this place-holder will replaced by the last received image
+-\image html text.png
+create text. When you select this option a window will pop-up to enter text.
+<br>
+-\image html entertextb.png
+<br>You can enter multiple lines of text. Click OK, the window will be hidden and you can click on the canvas to position the text.
+The text will appear on the canvas.
+-\image html multilineb.png
+<br>
+
+\li Bottom menu
+- Horizontal Shear: shear selected object horizontally
+\li Right menu
+- Vertical Shear: shear selected object vertically
+<p>
+If you right click on an object then the following pop-up menu will be shown:</p>
+\li Arrange
+- Forward - one level forward
+- Backward - one level backward
+- Bring to Front - all the way to the front
+- Sent to Back - all the way to the back
+\li Change text - change the text of a text object
+\li Delete - remove selected object from the canvas
+\li Expand - object will expand horizontally and vertically to fill the complete canvas
+\li Lock - lock items so that they can not be moved or resized
+\li Unlock - unlock selected items
+
+<p> We need some sort of macro's to enable variable text when transmitting images. The editor uses predefined strings that will be replaced by
+the "actual content" when the template is processed just before transmission.<br>
+
+Here's an example of the editor using macros and the result in the transmitter.</p>
+<br>
+\image html editor_2b.png
+<br><br>
+\image html transmitdrmb.png
+
+
+For the use of macro's see \ref macros
+
+\page macros Macro Text
+
+You can use macros to expand text add runtime. When layouting templates remember that % macros will be replaced by the final text.
+<br> Example: %v will expand to QSSTV.9.4.3.
+So leave enough room to place the final text.
 
 Following macro's are supported:<br>
 Macro's where the value is defined in the configuration
@@ -899,8 +1208,32 @@ Macro's where the value is defined by the system
 \li %%t - time in hours:minutes format
 \li %%d - date in year/month/day format
 \li %%v - qsstv_version
-\li %%s - SNR - only to be used for DRM in the WF Text see also \ref statusbar
+\li %%s - SNR only in DRM mode
+- in version 9.3 only used in the WF Text see also \ref statusbar
+- in version 9.4 and higher used in the WF Text and in the template images
 
+\page repeater Repeater
+
+This feature allows you to repeat images in both SSTV and DRM mode.
+see also \ref repAnchor "Repeater Configuration"
+
+It will first receive an image and after decoding it will retransmit the processed image.
+The repeater acts like a parrot, it is not just retransmitting the audio.
+
+
+When the repeater is inactief for a time (idle time) specified in the repeater configuration, 1 of 4 images will be transmitted.
+The overlay can be specified in the configuration.
+
+The retransmitted images are send in the mode selected in the Transmit window.
+For SSTV the mode can be the same as the mode of the received image.
+
+The repeater does not allow for cross-mode (i.e SSTV repeated in DRM or vice versa)
+
+Images will only be repeated if:
+- For DRM: the image was received without errors or after correction.
+- For SSTV: the image was received and the Complete precentage has been met.
+
+In DRM the repeater will never use Hybrid mode to repeat the image.
 
 
 \page credits Credits

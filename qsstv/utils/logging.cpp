@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -46,7 +46,7 @@
 //logFile logfile;
 
 
-logFile::logFile()
+logFile::logFile() : maskBA(NUMDEBUGLEVELS,false)
 {
 #ifdef ENABLELOGGING
   lf=new QFile;
@@ -55,7 +55,18 @@ logFile::logFile()
   logCount=0;
   savedLogEntry="";
   savedPosMask=0;
-  mask.set(); //all masks set:this will enable all logfile messages
+
+//  int itemp;
+//  ulong temp;
+//  unsigned long long ltemp;
+
+//  qDebug() << "sizeof int" << sizeof(itemp);
+//  qDebug() << "sizeof ulong" << sizeof(temp);
+//  qDebug() << "sizeof ullong" << sizeof(ltemp);
+
+
+
+
 }
 
 /*!
@@ -89,8 +100,8 @@ void logFile::close()
 {
 #ifdef ENABLELOGGING
  errorOut() << "closing logfile";
- add("End of logfile",LOGALL);
- add("....,",LOGALL);
+ add("End of logfile",LOGALL,false);
+ add("....,",LOGALL,false);
  delete ts;
  delete auxTs;
  lf->close();
@@ -142,14 +153,18 @@ bool logFile::reopen()
 */
 
 #ifdef ENABLELOGGING
-void logFile::add(QString t,short unsigned int posMask)
+void logFile::add(QString t,short unsigned int posMask,bool debug)
 {
   if(!(posMask==LOGALL)) // always show messages with DBALL
     {
-      if (!mask.test(posMask)) return;
+      if (!maskBA[posMask]) return;
     }
   if (!enabled) return;
-  mutex.lock();
+  if(debug)
+    {
+      qDebug() << t;
+    }
+ mutex.lock();
   if(logCount==0)
     {
       logCount=1;
@@ -189,14 +204,14 @@ void logFile::add(QString t,short unsigned int posMask)
   mutex.unlock();
 }
 #else
-void logFile::add(QString ,short unsigned int) {}
+void logFile::add(QString ,short unsigned int,bool ) {}
 #endif
 
-void logFile::add(const char *fileName,const char *functionName, int line, QString t,short unsigned int posMask)
+void logFile::add(const char *fileName,const char *functionName, int line, QString t,short unsigned int posMask,bool debug)
 {
   QString s;
   s=QString(fileName)+":"+QString(functionName)+":"+QString::number(line)+" "+ t;
-  add(s,posMask);
+  add(s,posMask,debug);
 }
 
 #ifdef ENABLELOGGING
@@ -224,9 +239,9 @@ bool logFile::setEnabled(bool enable)
   return t;
 }
 
-void logFile::setLogMask(std::bitset<NUMDEBUGLEVELS> logMask)
+void logFile::setLogMask(QBitArray logMask)
 {
-  mask=logMask;
+  maskBA=logMask;
 }
 
 void logFile::maskSelect(QWidget *wPtr)
@@ -243,7 +258,7 @@ void logFile::maskSelect(QWidget *wPtr)
        for(j=0;(j<2)&(i*2+j<NUMDEBUGLEVELS);j++)
        {
          cb=new QCheckBox(levelStr[i*2+j]);
-         cb->setChecked(mask.test(i*2+j));
+         cb->setChecked(maskBA[i*2+j]);
          ui.maskTableWidget->setCellWidget(i,j,cb);
        }
      }
@@ -255,7 +270,7 @@ void logFile::maskSelect(QWidget *wPtr)
            for(j=0;(j<2)&(i*2+j<NUMDEBUGLEVELS);j++)
            {
              cb=(QCheckBox *)ui.maskTableWidget->cellWidget(i,j);
-             mask.set(i*2+j,cb->isChecked());
+             maskBA[i*2+j]=cb->isChecked();
            }
          }
        deduplicate=ui.deduplicateCheckBox->isChecked();
@@ -264,9 +279,14 @@ void logFile::maskSelect(QWidget *wPtr)
 
 void logFile::readSettings()
 {
+  QBitArray ba;
   QSettings qSettings;
   qSettings.beginGroup ("logging");
-  mask=qSettings.value("mask",1).toULongLong();
+  maskBA=qSettings.value("maskBA",QBitArray(NUMDEBUGLEVELS,false)).toBitArray();
+  if(maskBA.size()<NUMDEBUGLEVELS)
+    {
+      maskBA=QBitArray(NUMDEBUGLEVELS,false);
+    }
   deduplicate=qSettings.value("deduplicate",true).toBool();
   qSettings.endGroup();
 }
@@ -275,7 +295,7 @@ void logFile::writeSettings()
 {
   QSettings qSettings;
   qSettings.beginGroup ("logging");
-  qSettings.setValue ( "mask", (qulonglong)mask.to_ulong());
+  qSettings.setValue ( "maskBA", maskBA);
   qSettings.setValue ( "deduplicate", deduplicate);
   qSettings.endGroup();
 }

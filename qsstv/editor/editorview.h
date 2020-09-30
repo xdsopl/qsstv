@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -30,81 +30,85 @@
 @author Johan Maes - ON4QZ
 */
 class editorForm;
-enum eactionType {SELECT,COLORPICK,RECTANGLE,ELLIPSE,LINE,IMAGE,TEXT};
-enum ePickMode {NOPICK, PICKFILLCOLOR,PICKLINECOLOR};
 
 /** Widget to display the various canvasItems */
 class editorView : public QWidget,private Ui::editorForm
 {
-Q_OBJECT
+  Q_OBJECT
 public:
-	
-	editorView(QWidget *parent = 0);
-	~editorView();
-	void readSettings();
-	void writeSettings();
-	
-	bool isModified() {return modified;}
-	bool open(QFile &f);
-	void save(QFile &f,bool templ);
 
-	QImage *getImage() { return image;}
-	void setImage(QImage *ima);
-	editorScene *getScene() {return scene;}
+  editorView(QWidget *parent = 0);
+  ~editorView();
+  void readSettings();
+  void writeSettings();
+
+  bool isModified() {return modified;}
+  bool open(QFile &f);
+  void save(QFile &f,bool templ);
+
+  QImage *getImage() { return image;}
+  void setImage(QImage *ima);
+  editorScene *getScene() {return scene;}
 
 public slots:
   void slotChangeCanvasSize();
-	void slotArrow();
-	void slotRectangle();
-	void slotCircle();
-	void slotColorPicker();
-	void slotColorPicked(const QPointF &p);
-	void slotText();
-	void slotImage();
-	void slotReplay();
-	void slotLine();
-	void slotClearAll();
+  void slotRectangle();
+  void slotCircle();
+  void slotText();
+  void slotImage();
+  void slotReplay();
+  void slotLine();
+  void slotClearAll();
+#ifndef QT_NO_DEBUG
+  void slotDump();
+#endif
 
-//Font
-	void slotFontChanged(const QFont &);
-	void slotFontSizeChanged(int);
-	void slotPenWidthChanged(double);
-	void slotBold(bool);
-	void slotItalic(bool);
-	void slotUnderline(bool);
+  //Font
+  void slotFontChanged(const QFont &);
+  void slotFontSizeChanged(int);
+  void slotPenWidthChanged(double);
+  void slotBold(bool);
+  void slotItalic(bool);
+  void slotUnderline(bool);
 
-//Color
-	void slotColorDialog();
-	void slotGradientDialog();
-	void slotButtonTriggered();
+  //Color
+  void slotColorDialog();
+  void slotGradientDialog();
+  void slotButtonTriggered();
 
-//Transform
-	void slotRotateChanged(int);
-	void slotShearChanged(int);
-//	void slotShearRotateChanged(double,int);
-//item feedback
-	void slotItemSelected(itemBase*);
-//Debug
+  //Transform
+  void slotShearChanged(int);
+  void slotItemSelected(graphItemBase*);
+  //Debug
 
-	void slotTextReturnPressed(const QString &);
+  void slotTextReturnPressed(const QString &);
 private:
-	editorScene *scene;
-	bool modified;
-	QImage *image;
-	void setTransform();
+  editorScene *scene;
+  bool modified;
+  QImage *image;
+  void setTransform();
   QIcon createColorToolButtonIcon(const QString &imageFile, QColor color);
-	QMenu *createColorMenu(const char *,int,QString text);
-	int canvasSizeIndex;
-	int currentPointSize;
-	int currentFontIndex;
-	double currentPenWidth;
-	QString txt;
-	QImage *colorPickImage;
-	ePickMode pickMode;
+  QMenu *createColorMenu(const char *,int,QString text);
+  int canvasSizeIndex;
+  int pointSize;
+  QString fontFamily;
+  bool bold;
+  bool underline;
+  bool italic;
+  double penWidth;
+  QColor fillColor;
+  QColor lineColor;
+  QColor gradientColor;
+
+
+
+
+  QString txt;
   int canvasWidth;
   int canvasHeight;
   void changeCanvasSize();
-  void dump();
+  void getParams();
+  void setParams();
 };
 
 #endif

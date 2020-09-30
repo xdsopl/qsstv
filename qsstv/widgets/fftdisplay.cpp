@@ -2,7 +2,7 @@
 #include "appglobal.h"
 #include "configparams.h"
 #include "math.h"
-#include "arraydumper.h"
+//#include "arraydumper.h"
 #include <QPainter>
 
 
@@ -10,10 +10,7 @@ fftDisplay::fftDisplay(QWidget *parent) : QLabel(parent)
 {
   //  blockIndex=0;
   arMagSAvg=NULL;
-  //  hammingBuffer=NULL;
   fftArray=NULL;
-  //  out=NULL;
-  //  dataBuffer=NULL;
   showWaterfall=false;
   fftMax=FFTMAX;
   range=RANGE;
@@ -48,15 +45,12 @@ void fftDisplay::init(int length,int nblocks,int isamplingrate)
   binBegin=(int) rint(FFTLOW/step);
   binEnd  =(int) rint(FFTHIGH/step);
   binDiff=binEnd-binBegin;
-
   fftArray=new QPolygon(binDiff);
   arMagSAvg=new double[binDiff];
-
   for(i=0;i<binDiff;i++)
     {
       arMagSAvg[i]=-30.;
     }
-
   // create the fftw plan
   //  plan = fftw_plan_r2r_1d(fftLength, dataBuffer, out, FFTW_R2HC, FFTW_ESTIMATE);
   update();
@@ -76,9 +70,9 @@ void fftDisplay::setMarkers(int mrk1, int mrk2, int mrk3)
 
 void fftDisplay::showFFT(double *fftData)
 {
-  int i,j;
+  int i,j,repCnt;
   QColor c;
-  double re,imag,tmp;
+  double re,imag,tmp,tmp1;
   if((!showWaterfall) && (slowCPU))
     {
       if(displayCounter++<1) return;
@@ -133,26 +127,36 @@ void fftDisplay::showFFT(double *fftData)
     }
   else
     {
-
       memmove(imagePtr->scanLine(1),imagePtr->scanLine(0),(imWidth*(imHeight-2))*sizeof(uint));
       uint *ptr=(uint *)imagePtr->scanLine(0);
-      for(i=0;i<imWidth;i++)
+      tmp1=0;
+      repCnt=0;
+      for (i=binBegin,j=0;i<binEnd;i++)
         {
-          int idx=rint((double)(FFTLOW+(i*FFTSPAN)/(double)imWidth)/step);
-          re=fftData[idx]/fftLength;
-          imag=fftData[fftLength-idx]/fftLength;
-          tmp=10*log10((re*re+imag*imag))-77.27;  // 0.5 Vtt is 0db
-          arMagWAvg[i]=arMagWAvg[i]*(1-avgVal)+avgVal*tmp;
-          if( arMagWAvg[i]<-100)
+          repCnt++;
+          re=fftData[i]/fftLength;
+          imag=fftData[fftLength-i]/fftLength;
+          tmp1+=(re*re+imag*imag);
+          if (((i-binBegin)*imWidth)/(binEnd-binBegin)>=j)
             {
-               arMagWAvg[i]=-100;
+              tmp1/=repCnt;
+              repCnt=0;
+              tmp=10*log10((tmp1))-77.27;  // 0.5 Vtt is 0db
+              arMagWAvg[j]=arMagWAvg[j]*(1-avgVal)+avgVal*tmp;
+              if( arMagWAvg[j]<-100)
+                {
+                  arMagWAvg[j]=-100;
+                }
+              tmp=1-(fftMax-arMagWAvg[j])/range;
+              if(tmp<0) tmp=0;
+              if (tmp>1)tmp=1;
+              c.setHsv(240-tmp*60,255,tmp*255);
+              ptr[j]=c.rgb();
+              tmp1=0;
+              j++;
             }
-          tmp=1-(fftMax-arMagWAvg[i])/range;
-          if(tmp<0) tmp=0;
-          if (tmp>1)tmp=1;
-          c.setHsv(240-tmp*60,255,tmp*255);
-          ptr[i]=c.rgb();
         }
+
     }
   update();
 }
@@ -171,18 +175,18 @@ QImage *fftDisplay::getImage()
   QPainter p(im);
   QPen pn;
   if (!showWaterfall) {
-     }
+    }
   else {
-     if (imagePtr) {
-        im->fill(Qt::black);
-        p.drawImage(0,5,*imagePtr);
-        pn.setColor(Qt::red);
-        pn.setWidth(3);
-        p.setPen(pn);
-        drawMarkers(&p,0,4);
-        drawMarkers(&p,height()+5,height()+9);
+      if (imagePtr) {
+          im->fill(Qt::black);
+          p.drawImage(0,5,*imagePtr);
+          pn.setColor(Qt::red);
+          pn.setWidth(3);
+          p.setPen(pn);
+          drawMarkers(&p,0,4);
+          drawMarkers(&p,height()+5,height()+9);
         }
-     }
+    }
   return im;
 }
 

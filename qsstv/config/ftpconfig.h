@@ -7,7 +7,7 @@
 
 #define NUMFTPRXIMAGES 30
 
-enum eftpSaveFormat {FTPIM,FTPFILE};
+enum eftpSaveFormat {FTPIMAGESEQUENCE,FTPFILENAME};
 
 extern bool enableFTP;
 extern int ftpPort;
@@ -19,6 +19,8 @@ extern QString ftpPassword;
 extern QString ftpFilename;
 extern QString ftpDefaultImageFormat;
 extern eftpSaveFormat ftpSaveFormat;
+extern bool addExtension;
+
 extern int ftpNumImages;
 
 

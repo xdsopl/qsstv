@@ -1,6 +1,6 @@
 #include "bsrform.h"
 #include "ui_bsrform.h"
-#include "drmrx/drmstatusframe.h"
+#include "drmstatusframe.h"
 #include "drm.h"
 
 bsrForm::bsrForm(QWidget *parent) :

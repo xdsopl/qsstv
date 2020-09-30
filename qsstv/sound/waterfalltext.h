@@ -2,9 +2,10 @@
 #define WATERFALLTEXT_H
 #include "appdefs.h"
 #include "fftw3.h"
+#include "macroexpansion.h"
 #include <QString>
 #include <QImage>
-#include "macroexpansion.h"
+
 
 class imageViewer;
 class wfFilter;
@@ -14,7 +15,7 @@ class waterfallText
 {
 public:
   waterfallText();
-  ~ waterfallText();
+  ~waterfallText();
   void init();
   void setText(QString txt);
   QImage *getImagePtr() {return &image;}

@@ -13,7 +13,8 @@
 #include <QVector>
 #include "appdefs.h"
 #include "hybridcrypt.h"
-#include "ftp.h"
+
+class ftpFunctions;
 
 enum edataGroupType {GENDATA,CAMESS,GENCA,MOTHEAD,MOTDATA,MOTDATACA};
 
@@ -112,7 +113,6 @@ struct transportBlock
     headerSize=0;
     alreadyReceived=false;
     retrieveTries=0;
-    //    blockList.clear();
     lastSegmentReceived=false;
     defaultSegmentSize=0;
   }
@@ -193,8 +193,10 @@ public:
   bool checkSaveImage(QByteArray ba, transportBlock *tbPtr);
   void saveImage(transportBlock *tbPtr);
   bool storeBSR(transportBlock *tb,bool compat);
-  bool rxNotifySetup();
-  bool rxNotifyCheck(QString fn);
+//  bool rxNotifySetup();
+//  bool rxNotifyCheck(QString fn);
+private slots:
+  void slotDownloadDone(bool err, QString filename);
 
 private:
   bool setupDataBlock(unsigned char *buffer,bool crcIsOK,int len);
@@ -218,6 +220,9 @@ private:
   bool isHybrid;
   hybridCrypt hc;
   bool alreadyDisplayed;
-//  ftpInterface *notifyIntf;
+  ftpFunctions *ff;
+  void displayReceivedImage(bool isHybrid, QString filename);
+  uint modeCodeTmp;
+  QString callsignTmp;
 };
 #endif // SOURCEDECODER_H

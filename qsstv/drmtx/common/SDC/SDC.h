@@ -35,7 +35,7 @@
 #include "../GlobalDefinitions.h"
 #include "../Parameter.h"
 #include "../util/CRC.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../util/Utilities.h"
 
 /* Definitions ****************************************************************/

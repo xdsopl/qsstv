@@ -9,19 +9,20 @@ QT       += core gui xml network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-QMAKE_CXXFLAGS_DEBUG += -O0
+QMAKE_CXXFLAGS_DEBUG += -O0 -Wno-implicit-fallthrough
 QMAKE_CXXFLAGS_RELEASE-= -O2
-QMAKE_CXXFLAGS_RELEASE += -O3
+QMAKE_CXXFLAGS_RELEASE += -O3 -Wno-implicit-fallthrough
 
 TARGET = qsstv
 TEMPLATE = app
-INCLUDEPATH += config utils sound widgets dsp dispatch logbook mainwidgets rig sstv videocapt drmrx drmtx xmlrpc
+INCLUDEPATH += config utils sound widgets dsp dispatch logbook mainwidgets rig sstv videocapt drmrx drmtx xmlrpc editor
+DEFINES += QT_DEPRECATED_WARNINGS
 
 CONFIG += link_pkgconfig
 PKGCONFIG += libopenjp2
 
 SOURCES += main.cpp\
-        mainwindow.cpp \
+    mainwindow.cpp \
     config/baseconfig.cpp \
     config/soundconfig.cpp \
     utils/dirdialog.cpp \
@@ -151,7 +152,6 @@ SOURCES += main.cpp\
     config/operatorconfig.cpp \
     widgets/extviewer.cpp \
     config/guiconfig.cpp \
-    utils/ftp.cpp \
     utils/qftp.cpp \
     sound/resamplefilter.cpp \
     widgets/imagematrix.cpp \
@@ -177,11 +177,14 @@ SOURCES += main.cpp\
     config/frequencyselectwidget.cpp \
     editor/canvassizeform.cpp \
     utils/fftcalc.cpp \
-    config/hybridnotifyconfig.cpp \
     utils/jp2io.cpp \
     utils/color.cpp \
     widgets/testpatternselection.cpp \
-    utils/filewatcher.cpp
+    utils/filewatcher.cpp \
+    utils/ftpthread.cpp \
+    utils/ftpfunctions.cpp \
+    editor/basegraphicitem.cpp \
+    editor/templateviewer.cpp
 
 
 HEADERS  += mainwindow.h \
@@ -193,6 +196,7 @@ HEADERS  += mainwindow.h \
     utils/loggingparams.h \
     appglobal.h \
     utils/supportfunctions.h \
+    utils/vector.h \
     utils/buffermanag.h \
     sound/wavio.h \
     config/directoriesconfig.h \
@@ -220,7 +224,6 @@ HEADERS  += mainwindow.h \
     editor/editorview.h \
     editor/gradientdialog.h \
     editor/graphicitems.h \
-    editor/qdialog_p.h \
     widgets/textdisplay.h \
     dispatch/dispatcher.h \
     dispatch/dispatchevents.h \
@@ -310,7 +313,6 @@ HEADERS  += mainwindow.h \
     utils/qurlinfo.h \
     utils/reedsolomoncoder.h \
     utils/rs.h \
-    utils/vector.h \
     xmlrpc/ipcmessage.h \
     xmlrpc/maiaFault.h \
     xmlrpc/maiaObject.h \
@@ -321,7 +323,6 @@ HEADERS  += mainwindow.h \
     config/operatorconfig.h \
     widgets/extviewer.h \
     config/guiconfig.h \
-    utils/ftp.h \
     utils/qftp.h \
     sound/resamplefilter.h \
     widgets/imagematrix.h \
@@ -347,11 +348,15 @@ HEADERS  += mainwindow.h \
     config/frequencyselectwidget.h \
     editor/canvassizeform.h \
     utils/fftcalc.h \
-    config/hybridnotifyconfig.h \
     utils/jp2io.h \
     utils/color.h \
     widgets/testpatternselection.h \
-    utils/filewatcher.h
+    utils/filewatcher.h \
+    utils/ftpthread.h \
+    utils/ftpevents.h \
+    utils/ftpfunctions.h \
+    editor/basegraphicitem.h \
+    editor/templateviewer.h
 
 
 FORMS += mainwindow.ui \
@@ -392,8 +397,8 @@ FORMS += mainwindow.ui \
     drmrx/fixform.ui \
     config/frequencyselectwidget.ui \
     editor/canvassizeform.ui \
-    config/hybridnotifyconfig.ui \
-    widgets/testpatternselection.ui
+    widgets/testpatternselection.ui \
+    editor/templateviewer.ui
 
  LIBS += -lasound \
          -lpulse \
@@ -453,7 +458,6 @@ OTHER_FILES += \
     documentation/manual/images/txdrm_status.png \
     documentation/manual/images/config.png \
     documentation/manual/images/calibration.png \
-    documentation/manual/images/sstvdrmselect.png \
     documentation/manual/images/wftextpopup.png \
     documentation/manual/images/txdrm_options.png \
     documentation/manual/images/editor_1.png \
@@ -516,21 +520,82 @@ FORMS   += scope/scopeoffset.ui \
  LIBS += ../qwt/libqwt.a
 }
 
-CONFIG(debug ,debug|release){
-dox.commands = cd $$PWD/documentation/manual ;doxygen  manual.doxy;
-dox.depends= FORCE
-PRE_TARGETDEPS       +=    dox
-message(dox will be generated)
-}
+
+contains(QMAKE_HOST.arch, arm.*):{
+        message(arm)
+
+    }
+  else {
+        message(not arm)
+       CONFIG(debug ,debug|release){
+       dox.commands = cd $$PWD/documentation/manual ;doxygen  manual.doxy; cd $$PWD ;doxygen  $$PWD/documentation/api/api.doxy;
+       dox.depends= FORCE
+       PRE_TARGETDEPS       +=    dox
+       message(dox will be generated)
+       }
+    }
+
+
+
+
 
 dox.path=/usr/share/doc/$$TARGET
 dox.files= $$PWD/manual/*
 QMAKE_EXTRA_TARGETS   +=   dox
 
 
+isEmpty(PREFIX) {
+        PREFIX = /usr/local
+    }
+target.path = $$PREFIX/bin
+
+shortcutfiles.files =qsstv.desktop
+shortcutfiles.path = $$PREFIX/share/applications/
+data.files += icons/filedupes.png
+data.path=$$PREFIX/share/icons/hicolor/42x42/apps/
+
+
 
 RESOURCES += \
     qsstv.qrc
 
-target.path = /usr/bin
-INSTALLS += target dox
+INSTALLS += target dox shortcutfiles data
+
+DISTFILES += \
+    qsstv.desktop \
+    documentation/api/api.doxy \
+    documentation/manual/images/editor_1b.png \
+    documentation/manual/images/editor_2b.png \
+    documentation/manual/images/editor_image_sizeb.png \
+    documentation/manual/images/entertextb.png \
+    documentation/manual/images/multilineb.png \
+    documentation/manual/images/editor_text_rotate.png \
+    documentation/manual/images/editor_rotate2.png \
+    documentation/manual/images/editor_rotate.png \
+    documentation/manual/images/editor_resize.png \
+    documentation/manual/images/transmitdrmb.png \
+    documentation/manual/images/editor_2b.png \
+    documentation/manual/images/multilineb.png \
+    documentation/manual/images/entertextb.png \
+    documentation/manual/images/editor_image_sizeb.png \
+    documentation/manual/images/editor_1b.png \
+    documentation/manual/images/rxwidget1.png \
+    documentation/manual/images/Gallery_image_options.png \
+    documentation/manual/images/pavu_playback.png \
+    documentation/manual/images/pavu_rec.png \
+    documentation/manual/images/spectrum_wf.png \
+    documentation/manual/images/receivedrm.png \
+    documentation/manual/images/pavu_rec.png \
+    documentation/manual/images/pavu_playback.png \
+    documentation/manual/images/editor_2b.png \
+    documentation/manual/images/transmitdrmb.png \
+    documentation/manual/images/editor_text_rotate.png \
+    documentation/manual/images/editor_rotate2.png \
+    documentation/manual/images/editor_rotate.png \
+    documentation/manual/images/editor_resize.png \
+    documentation/manual/images/multilineb.png \
+    documentation/manual/images/entertextb.png \
+    documentation/manual/images/editor_image_sizeb.png \
+    documentation/manual/images/editor_1b.png \
+    documentation/manual/images/spectrum1.png \
+    documentation/manual/images/cat_flrig.png

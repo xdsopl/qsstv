@@ -15,8 +15,8 @@ public:
 private:
   filter sync1200;
   filter sync1900;
-  filter vol1200;
-  filter vol1900;
+  filter sync1200lp;
+  filter sync1900lp;
 
 
 };

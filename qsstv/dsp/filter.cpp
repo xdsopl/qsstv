@@ -1,11 +1,14 @@
 #include "filter.h"
 #include "nco.h"
+#include <QDebug>
+#include "arraydumper.h"
 
 filter::filter(efilterType fType, uint dataLenght)
 {
   filterType=fType;
   resetPointers();
   dataLen=dataLenght;
+  coefZPtrNewed=false;
 }
 
 
@@ -21,7 +24,7 @@ void filter::init()
   nZeroes=0;
   nPoles=0;
   gain=1;
-  avgVolume=0;
+//  avgVolume=0;
   volumeAttackIntegrator=1;
   volumeDecayIntegrator=1;
   prevTemp=0;
@@ -29,6 +32,9 @@ void filter::init()
   frCenter=0;
   fltrIndex=0;
   coefIndex=0;
+  resIprev=0;
+  resQprev=0;
+
 }
 
 void filter::resetPointers()
@@ -45,8 +51,13 @@ void filter::resetPointers()
 
 void filter::deleteBuffers()
 {
-  //  if(coefZPtr!=NULL)          delete [] coefZPtr;
-  //  if(coefPPtr!=NULL)          delete [] coefPPtr;
+  if(coefZPtr!=NULL && coefZPtrNewed)
+      {
+//          qDebug() <<"delete coefZptr" << this << coefZPtr;
+          delete [] coefZPtr;
+          coefZPtr=NULL;
+          coefZPtrNewed=false;
+      }
   if(sampleBufferIPtr!=NULL)  delete [] sampleBufferIPtr;
   if(sampleBufferQPtr!=NULL)  delete [] sampleBufferQPtr;
   if(sampleBufferYIPtr!=NULL) delete [] sampleBufferYIPtr;
@@ -97,31 +108,7 @@ void filter::allocate()
 
 void filter::processFIR(FILTERPARAMTYPE *dataPtr, double *dataOutputPtr)
 {
-  //  FILTERPARAMTYPE resI;
-  //  FILTERPARAMTYPE *fp1;
-  //  const FILTERPARAMTYPE *cf1;
-  //  unsigned int i,k;
-  //  for (k=0;k<dataLen;k++)
-  //    {
-  //      resI=0;
-  //      cf1 = coefZPtr;
-  //      fp1 = sampleBufferIPtr;
-  //      memmove(sampleBufferIPtr+1, sampleBufferIPtr, bufSize);
-  //      sampleBufferIPtr[0]=dataPtr[k];
-  //      for(i=0;i<=nZeroes;i++,fp1++,cf1++)
-  //        {
-  //          resI+=(*fp1)*(*cf1);
-  //        };
-  //      dataOutputPtr[k]=resI/gain;
-
-  //      //      double vol=sqrt(resI*resI);
-  //      //      if (vol>avgVolume) avgVolume=avgVolume*(1-volumeAttackIntegrator)+(volumeAttackIntegrator)*vol;
-  //      //      else if (vol<avgVolume) avgVolume=avgVolume*(1-volumeDecayIntegrator)+(volumeDecayIntegrator)*vol;
-  //      //      volumePtr[i]=avgVolume;
-  //    }
-
-
-  FILTERPARAMTYPE resI;
+   FILTERPARAMTYPE resI;
   const FILTERPARAMTYPE *cf1;
   unsigned int i,k;
   int fi;
@@ -146,33 +133,6 @@ void filter::processFIR(FILTERPARAMTYPE *dataPtr, double *dataOutputPtr)
       dataOutputPtr[k]=resI/gain;
     }
 
-
-//  FILTERPARAMTYPE resI;
-//  FILTERPARAMTYPE *fp1;
-//  const FILTERPARAMTYPE *cf1;
-//  unsigned int i,k;
-//  for (k=0;k<dataLen;k++)
-//    {
-//      sampleBufferIPtr[fltrIndex]=dataPtr[k];
-//      fp1 = &sampleBufferIPtr[nZeroes];
-//      resI=0;
-//      cf1=&coefZPtr[coefIndex];
-//      for(i=0;i<=nZeroes;i++,fp1--,cf1--)
-//        {
-//          resI+=(*fp1)*(*cf1);
-//        }
-//      fltrIndex--;
-//      if(fltrIndex<0)
-//        {
-//          fltrIndex=nZeroes;
-//          coefIndex =nZeroes+1;
-//        }
-//      else
-//        {
-//          coefIndex++;
-//        }
-//      dataOutputPtr[k]=resI/gain;
-//    }
 }
 
 void filter::processFIRInt(FILTERPARAMTYPE *dataPtr, quint16 *dataOutputPtr)
@@ -218,80 +178,11 @@ void filter::processFIRInt(FILTERPARAMTYPE *dataPtr, quint16 *dataOutputPtr)
         }
       dataOutputPtr[k]=(quint16)rint(resI/gain);
     }
-
-
-//  FILTERPARAMTYPE resI;
-//  FILTERPARAMTYPE *fp1;
-//  const FILTERPARAMTYPE *cf1;
-//  unsigned int i,k;
-//  for (k=0;k<dataLen;k++)
-//    {
-//      sampleBufferIPtr[fltrIndex]=dataPtr[k];
-//      fp1 = &sampleBufferIPtr[nZeroes];
-//      resI=0;
-//      cf1=&coefZPtr[coefIndex];
-//      for(i=0;i<=nZeroes;i++,fp1--,cf1--)
-//        {
-//          resI+=(*fp1)*(*cf1);
-//        }
-//      fltrIndex--;
-//      if(fltrIndex<0)
-//        {
-//          fltrIndex=nZeroes;
-//          coefIndex =nZeroes+1;
-//        }
-//      else
-//        {
-//          coefIndex++;
-//        }
-//      dataOutputPtr[k]=(quint16)rint(resI/gain);
-//    }
 }
 
 
 void filter::processFIRDemod(FILTERPARAMTYPE *dataPtr,FILTERPARAMTYPE *dataOutputPtr)
 {
-//  FILTERPARAMTYPE  temp;
-//  unsigned int i,k;
-//  FILTERPARAMTYPE resI=0, resQ=0;
-//  FILTERPARAMTYPE *fp1, *fp2;
-//  const FILTERPARAMTYPE *cf1;
-//  FILTERPARAMTYPE discRe,discIm;
-
-//  for (k=0;k<dataLen;k++)
-//    {
-//      resI=0;
-//      resQ=0;
-//      cf1 = coefZPtr;
-//      fp1 = sampleBufferIPtr;
-//      fp2 = sampleBufferQPtr;
-//      memmove(sampleBufferIPtr, sampleBufferIPtr+1, bufSize);
-//      memmove(sampleBufferQPtr, sampleBufferQPtr+1, bufSize);
-//      nco.multiply(sampleBufferIPtr[nZeroes],sampleBufferQPtr[nZeroes],dataPtr[k]);
-//      for(i=0;i<=nZeroes;i++,fp1++,fp2++,cf1++)
-//        {
-//          resI+=(*fp1)*(*cf1);
-//          resQ+=(*fp2)*(*cf1);
-//        }
-//      resI/=gain;
-//      resQ/=gain;
-//      discRe=resI*resIprev+resQ*resQprev;
-//      discIm=-resQ*resIprev+resQprev*resI;
-//      resIprev=resI;
-//      resQprev=resQ;
-//      if(discRe==0) discRe=0.0001;
-//      temp=frCenter-atan2(discIm,discRe)*angleToFc;
-//      if(temp<500) temp=prevTemp;
-//      if(temp>2600) temp=prevTemp;
-//      prevTemp=temp;
-//      dataOutputPtr[k]=temp;
-//      double vol=sqrt(resI*resI+resQ*resQ);
-//      if (vol>avgVolume) avgVolume=avgVolume*(1-volumeAttackIntegrator)+(volumeAttackIntegrator)*vol;
-//      else if (vol<avgVolume) avgVolume=avgVolume*(1-volumeDecayIntegrator)+(volumeDecayIntegrator)*vol;
-//      volumePtr[i]=avgVolume;
-//    }
-
-
   FILTERPARAMTYPE resI,resQ;
   const FILTERPARAMTYPE *cf1;
   FILTERPARAMTYPE discRe,discIm;
@@ -329,63 +220,14 @@ void filter::processFIRDemod(FILTERPARAMTYPE *dataPtr,FILTERPARAMTYPE *dataOutpu
       if(temp>2600) temp=prevTemp;
       prevTemp=temp;
       dataOutputPtr[k]=temp;
-      double vol=sqrt(resI*resI+resQ*resQ);
-      if (vol>avgVolume) avgVolume=avgVolume*(1-volumeAttackIntegrator)+(volumeAttackIntegrator)*vol;
-      else if (vol<avgVolume) avgVolume=avgVolume*(1-volumeDecayIntegrator)+(volumeDecayIntegrator)*vol;
-      volumePtr[i]=avgVolume;
-    }
-
-
-//  FILTERPARAMTYPE resI,resQ;
-//  FILTERPARAMTYPE *fp1,*fp2;
-//  const FILTERPARAMTYPE *cf1;
-//  FILTERPARAMTYPE discRe,discIm;
-//  FILTERPARAMTYPE  temp;
-
-//  unsigned int i,k;
-//  for (k=0;k<dataLen;k++)
-//    {
-//      nco.multiply(sampleBufferIPtr[fltrIndex],sampleBufferQPtr[fltrIndex],dataPtr[k]);
-//      fp1 = &sampleBufferIPtr[nZeroes];
-//      fp2 = &sampleBufferQPtr[nZeroes];
-//      resI=0;
-//      resQ=0;
-//      cf1=&coefZPtr[coefIndex];
-//      for(i=0;i<=nZeroes;i++,fp1--,fp2--,cf1--)
-//        {
-//          resI+=(*fp1)*(*cf1);
-//          resQ+=(*fp2)*(*cf1);
-//        }
-//      fltrIndex--;
-//      if(fltrIndex<0)
-//        {
-//          fltrIndex=nZeroes;
-//          coefIndex =nZeroes+1;
-//        }
-//      else
-//        {
-//          coefIndex++;
-//        }
-//      resI/=gain;
-//      resQ/=gain;
-//      discRe=resI*resIprev+resQ*resQprev;
-//      discIm=-resQ*resIprev+resQprev*resI;
-//      resIprev=resI;
-//      resQprev=resQ;
-//      if(discRe==0) discRe=0.0001;
-//      temp=frCenter-atan2(discIm,discRe)*angleToFc;
-//      if(temp<500) temp=prevTemp;
-//      if(temp>2600) temp=prevTemp;
-//      prevTemp=temp;
-//      dataOutputPtr[k]=temp;
 //      double vol=sqrt(resI*resI+resQ*resQ);
+
+
 //      if (vol>avgVolume) avgVolume=avgVolume*(1-volumeAttackIntegrator)+(volumeAttackIntegrator)*vol;
 //      else if (vol<avgVolume) avgVolume=avgVolume*(1-volumeDecayIntegrator)+(volumeDecayIntegrator)*vol;
-//      volumePtr[i]=avgVolume;
-
-//    }
-
-
+//      volumePtr[k]=avgVolume;
+    }
+//  arrayDump("Volume",volumePtr,RXSTRIPE,true,false);
 }
 
 
@@ -418,10 +260,11 @@ void filter::processHILBVolume(FILTERPARAMTYPE *dataPtr)
 
 
 
-void filter::processIIR(double *dataPtr)
+void filter::processIIRRectified(double *dataPtr)
 {
   unsigned int i,j;
   double resx;
+//  arrayDump("Inp",dataPtr,dataLen,true,true);
   for (i=0;i<dataLen;i++)
     {
       resx=0;
@@ -441,39 +284,13 @@ void filter::processIIR(double *dataPtr)
           resx+=sampleBufferYIPtr[j]*coefPPtr[j];
         }
       sampleBufferYIPtr[nPoles]=resx;
-      filteredPtr[i]=resx;
+      filteredPtr[i]=abs(resx);
     }
+//   arrayDump("SYNCFIL",filteredPtr,dataLen,true,true);
 }
 
 void filter::processIQ(FILTERPARAMTYPE *dataPtr, float *dataOutputPtr)
 {
-
-//  FILTERPARAMTYPE resQ;
-//  const FILTERPARAMTYPE *cf1;
-//  unsigned int i,k;
-//  int fi;
-//  for (k=0;k<dataLen;k++)
-//    {
-//      sampleBufferIPtr[fltrIndex]=dataPtr[k];
-//      fi=fltrIndex--;
-//      if(fltrIndex<0)
-//        fltrIndex=nZeroes;
-//      resQ=0;
-//      cf1 = coefZPtr;
-//      for(i=0;i<=nZeroes;i++,cf1++)
-//        {
-//          if ((fi+i) >nZeroes)
-//            {
-//              fi -=(nZeroes+1);
-//            }
-
-//          resQ+=sampleBufferIPtr[fi+i]*(*cf1);
-//        }
-//      dataOutputPtr[2*k+1]=sampleBufferIPtr[(nZeroes+1)/2]; // just delay
-//      dataOutputPtr[2*k]=resQ/gain;
-//    }
-
-
   FILTERPARAMTYPE resQ=0;
   const FILTERPARAMTYPE *cf1;
   FILTERPARAMTYPE *fp1;
@@ -500,7 +317,13 @@ void filter::setupMatchedFilter(FILTERPARAMTYPE freq, uint numTaps)
   uint i;
   init();
   nZeroes=numTaps-1;
+  if(coefZPtr!=NULL && coefZPtrNewed)
+      {
+          delete [] coefZPtr;
+      }
   coefZPtr=new FILTERPARAMTYPE[nZeroes+1];
+  coefZPtrNewed=true;
+//  qDebug() <<"new coefZptr" << this << coefZPtr;
 
   for(i=0;i<=nZeroes;i++)
     {

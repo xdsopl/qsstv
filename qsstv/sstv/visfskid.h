@@ -70,7 +70,7 @@ class fskIdDecoder : public fskDecoder
 public:
   enum efskState  {FSKINIT,WAITSTART1500,WAITEND1500,WAITSTART1900,WAITEND1900,WAITSTART2100,WAITEND2100,GETID};
   fskIdDecoder();
-  void extract(unsigned int syncSampleCtr, bool narrow);
+  void extract(unsigned int syncSampleCtr,bool narrow);
   void reset();
   QString getFSKId();
 
@@ -145,9 +145,6 @@ private:
 //  retraceDetector retracer;
   quint16 freqPtr();
   bool isNarrow;
-
-
-
 };
 
 

@@ -7,6 +7,7 @@
 extern QStringList freqList;
 extern QStringList modeList;
 extern QStringList sbModeList;
+extern QStringList passBandList;
 extern QString additionalCommand;
 extern bool additionalCommandHex;
 

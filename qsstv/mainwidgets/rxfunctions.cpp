@@ -40,7 +40,7 @@ void rxFunctions::run()
 {
   int count;
   DSPFLOAT tempBuf[RXSTRIPE];
-  unsigned int volBuf[RXSTRIPE];
+  DSPFLOAT volBuf[RXSTRIPE];
   abort=false;
   while(!abort)
     {
@@ -55,7 +55,6 @@ void rxFunctions::run()
               msleep((250*RXSTRIPE)/rxClock);
               if(!soundIOPtr->isCapturing())
                 {
-//                  qDebug() << " not capturing";
                   switchRxState(RXINIT);
                 }
             }
@@ -67,10 +66,8 @@ void rxFunctions::run()
               soundIOPtr->rxBuffer.copyNoCheck(tempBuf,RXSTRIPE);
               soundIOPtr->rxVolumeBuffer.copyNoCheck(volBuf,RXSTRIPE);
               displayFFTEvent* ce = new displayFFTEvent(tempBuf);
-//              addToLog("fft display start",LOGPERFORM);
-//              ce->waitFor(&done);
               QApplication::postEvent(dispatcherPtr, ce);
-//              while(!done) {usleep(100);}
+
               addToLog("fft display done",LOGPERFORM);
               switch (transmissionModeIndex)
                 {
@@ -131,6 +128,23 @@ void rxFunctions::forceInit()
     {
       sstvRxPtr->init();
     }
+}
+
+bool rxFunctions::rxBusy()
+{
+  switch (transmissionModeIndex)
+    {
+    case TRXDRM:
+      return drmBusy;
+      break;
+    case TRXSSTV:
+      return sstvRxPtr->isBusy();
+      break;
+    case TRXNOMODE:
+       return false;
+      break;
+    }
+  return false;
 }
 
 

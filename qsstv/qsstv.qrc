@@ -31,5 +31,6 @@
         <file>icons/binary.png</file>
         <file>icons/down.png</file>
         <file>icons/up.png</file>
+        <file>icons/line.png</file>
     </qresource>
 </RCC>

@@ -35,13 +35,13 @@ private:
   int bep_size;
   unsigned long sumOfFailures;
   unsigned long uncorrectableFailures;
-  int k;
+//  int k;
   QFile fpin, fpout;
   long got,chunks;
   int coded_file_size ;
   char coded_file_ext[4] ;
   QString origFileName;
-  char *p ;
+//  char *p ;
   eRSType fileType;
   int totalSegments;
   int segmentLength;

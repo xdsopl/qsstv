@@ -4,7 +4,7 @@
  *
  * Author(s):
  *	Volker Fischer, Andrea Russo, Julian Cable
- * 
+ *
  * adapted for ham sstv use Ties Bos - PA0MBO
  *
  *
@@ -33,7 +33,7 @@
 #define DABMOT_H__3B0UBVE98732KJVEW363E7A0D31912__INCLUDED_
 
 #include "../GlobalDefinitions.h"
-#include "utils/vector.h"
+#include "vector.h"
 #include "../util/CRC.h"
 #include <time.h>
 #include <map>
@@ -62,301 +62,301 @@
 
 class CMOTObjectRaw
 {
-  public:
-    CMOTObjectRaw ()
-    {
-	Reset ();
-    }
+public:
+  CMOTObjectRaw ()
+  {
+    Reset ();
+  }
 
-    CMOTObjectRaw (const CMOTObjectRaw & nOR)
-    {
-	Header = nOR.Header;
-	Body = nOR.Body;
-    }
+  CMOTObjectRaw (const CMOTObjectRaw & nOR)
+  {
+    Header = nOR.Header;
+    Body = nOR.Body;
+  }
 
-    CMOTObjectRaw & operator= (const CMOTObjectRaw & nOR)
-    {
-	Header = nOR.Header;
-	Body = nOR.Body;
-	return *this;
-    }
+  CMOTObjectRaw & operator= (const CMOTObjectRaw & nOR)
+  {
+    Header = nOR.Header;
+    Body = nOR.Body;
+    return *this;
+  }
 
-    void Reset ()
-    {
-	Header.Init (0);
-	Body.Init (0);
-    }
+  void Reset ()
+  {
+    Header.Init (0);
+    Body.Init (0);
+  }
 
-    CVector < _BINARY > Header;
-    CVector < _BINARY > Body;
+  CVector < _BINARY > Header;
+  CVector < _BINARY > Body;
 };
 
 class CDateAndTime
 {
-  public:
+public:
 
-    CDateAndTime():utc_flag(0), lto_flag(0), half_hours(0),
-        year(0), month(0), day(0), hours(0), minutes(0), seconds(0)
-    {}
+  CDateAndTime():utc_flag(0), lto_flag(0), half_hours(0),
+    year(0), month(0), day(0), hours(0), minutes(0), seconds(0)
+  {}
 
-    void extract_relative (CVector < _BINARY > &vecbiData);
-    void extract_absolute (CVector < _BINARY > &vecbiData);
-    void Reset ()
-    {
-        utc_flag = 0;
-        lto_flag = 0;
-        half_hours = 0;
-        year = 0;
-        month = 0;
-        day = 0;
-        hours = 0;
-        minutes = 0;
-        seconds = 0;
-    }
+  void extract_relative (CVector < _BINARY > &vecbiData);
+  void extract_absolute (CVector < _BINARY > &vecbiData);
+  void Reset ()
+  {
+    utc_flag = 0;
+    lto_flag = 0;
+    half_hours = 0;
+    year = 0;
+    month = 0;
+    day = 0;
+    hours = 0;
+    minutes = 0;
+    seconds = 0;
+  }
 
-	void dump(ostream& out);
+  void dump(ostream& out);
 
-    int utc_flag, lto_flag, half_hours;
-    uint16_t year;
-    uint8_t month, day;
-    int hours, minutes, seconds;
+  int utc_flag, lto_flag, half_hours;
+  uint16_t year;
+  uint8_t month, day;
+  int hours, minutes, seconds;
 };
 
 typedef int TTransportID;
 
 class CSegmentTracker
 {
-  public:
+public:
 
-    CSegmentTracker ()
-    {
-	Reset ();
-    }
+  CSegmentTracker ()
+  {
+    Reset ();
+  }
 
-    void Reset ()
-    {
-	vecbHaveSegment.clear ();
-    }
+  void Reset ()
+  {
+    vecbHaveSegment.clear ();
+  }
 
-    size_t size ()
-    {
-	return vecbHaveSegment.size ();
-    }
+  size_t size ()
+  {
+    return vecbHaveSegment.size ();
+  }
 
-    _BOOLEAN Ready ()
-    {
-	if (vecbHaveSegment.size () == 0)
-	    return false;
-	for (size_t i = 0; i < vecbHaveSegment.size (); i++)
-	  {
-	      if (vecbHaveSegment[i] == false)
-		{
-		    return false;
-		}
-	  }
-	return true;
-    }
+  _BOOLEAN Ready ()
+  {
+    if (vecbHaveSegment.size () == 0)
+      return false;
+    for (size_t i = 0; i < vecbHaveSegment.size (); i++)
+      {
+        if (vecbHaveSegment[i] == false)
+          {
+            return false;
+          }
+      }
+    return true;
+  }
 
-    void AddSegment (int iSegNum)
-    {
-	if ((iSegNum + 1) > int (vecbHaveSegment.size ()))
-	    vecbHaveSegment.resize (iSegNum + 1, false);
-	vecbHaveSegment[iSegNum] = true;
-    }
+  void AddSegment (int iSegNum)
+  {
+    if ((iSegNum + 1) > int (vecbHaveSegment.size ()))
+      vecbHaveSegment.resize (iSegNum + 1, false);
+    vecbHaveSegment[iSegNum] = true;
+  }
 
-    _BOOLEAN HaveSegment (int iSegNum)
-    {
-	if (iSegNum < int (vecbHaveSegment.size ()))
-	    return vecbHaveSegment[iSegNum];
-	return false;
-    }
+  _BOOLEAN HaveSegment (int iSegNum)
+  {
+    if (iSegNum < int (vecbHaveSegment.size ()))
+      return vecbHaveSegment[iSegNum];
+    return false;
+  }
 
-  protected:
-    vector < _BOOLEAN > vecbHaveSegment;
+protected:
+  vector < _BOOLEAN > vecbHaveSegment;
 };
 
 class CReassembler
 {
-  public:
+public:
 
-	CReassembler(): vecData(), vecLastSegment(),
-		iLastSegmentNum(-1), iLastSegmentSize(-1), iSegmentSize(0),
-		Tracker(), bReady(false)
-    {
-    }
+  CReassembler(): vecData(), vecLastSegment(),
+    iLastSegmentNum(-1), iLastSegmentSize(-1), iSegmentSize(0),
+    Tracker(), bReady(false)
+  {
+  }
 
-    CReassembler (const CReassembler & r):iLastSegmentNum (r.iLastSegmentNum),
-	iLastSegmentSize (r.iLastSegmentSize),
-	iSegmentSize (r.iSegmentSize), Tracker (r.Tracker), bReady (r.bReady)
-    {
-	vecData.Init (r.vecData.Size ());
-	vecData = r.vecData;
-	vecLastSegment.Init (r.vecLastSegment.Size ());
-	vecLastSegment = r.vecLastSegment;
-    }
+  CReassembler (const CReassembler & r):iLastSegmentNum (r.iLastSegmentNum),
+    iLastSegmentSize (r.iLastSegmentSize),
+    iSegmentSize (r.iSegmentSize), Tracker (r.Tracker), bReady (r.bReady)
+  {
+    vecData.Init (r.vecData.Size ());
+    vecData = r.vecData;
+    vecLastSegment.Init (r.vecLastSegment.Size ());
+    vecLastSegment = r.vecLastSegment;
+  }
 
-    virtual ~ CReassembler ()
-    {
-    }
+  virtual ~ CReassembler ()
+  {
+  }
 
-    inline CReassembler & operator= (const CReassembler & r)
-    {
-	iLastSegmentNum = r.iLastSegmentNum;
-	iLastSegmentSize = r.iLastSegmentSize;
-	iSegmentSize = r.iSegmentSize;
-	Tracker = r.Tracker;
-	vecData.Init (r.vecData.Size ());
-	vecData = r.vecData;
-	vecLastSegment.Init (r.vecLastSegment.Size ());
-	vecLastSegment = r.vecLastSegment;
-	bReady = r.bReady;
+  inline CReassembler & operator= (const CReassembler & r)
+  {
+    iLastSegmentNum = r.iLastSegmentNum;
+    iLastSegmentSize = r.iLastSegmentSize;
+    iSegmentSize = r.iSegmentSize;
+    Tracker = r.Tracker;
+    vecData.Init (r.vecData.Size ());
+    vecData = r.vecData;
+    vecLastSegment.Init (r.vecLastSegment.Size ());
+    vecLastSegment = r.vecLastSegment;
+    bReady = r.bReady;
 
-	return *this;
-    }
+    return *this;
+  }
 
-    void Reset ()
-    {
-	vecData.Init (0);
-	vecData.ResetBitAccess ();
-	vecLastSegment.Init (0);
-	vecLastSegment.ResetBitAccess ();
-	iLastSegmentNum = -1;
-	iLastSegmentSize = -1;
-	iSegmentSize = 0;
-	Tracker.Reset ();
-	bReady = false;
-    }
+  void Reset ()
+  {
+    vecData.Init (0);
+    vecData.ResetBitAccess ();
+    vecLastSegment.Init (0);
+    vecLastSegment.ResetBitAccess ();
+    iLastSegmentNum = -1;
+    iLastSegmentSize = -1;
+    iSegmentSize = 0;
+    Tracker.Reset ();
+    bReady = false;
+  }
 
-    _BOOLEAN Ready ()
-    {
-	return bReady;
-    }
+  _BOOLEAN Ready ()
+  {
+    return bReady;
+  }
 
-    void AddSegment (CVector < _BYTE > &vecDataIn,
-		     int iSegSize, int iSegNum, _BOOLEAN bLast = false);
+  void AddSegment (CVector < _BYTE > &vecDataIn,
+                   int iSegSize, int iSegNum, _BOOLEAN bLast = false);
 
-    _BOOLEAN IsZipped () const;
-    _BOOLEAN uncompress();
+//  _BOOLEAN IsZipped () const;
+//  _BOOLEAN uncompress();
 
-    CVector < _BYTE > vecData;
+  CVector < _BYTE > vecData;
 
-  protected:
+protected:
 
-    virtual void copyin (CVector < _BYTE > &vecDataIn, size_t iSegNum,
-			 size_t bytes);
-    virtual void cachelast (CVector < _BYTE > &vecDataIn, size_t iSegSize);
-    virtual void copylast ();
+  virtual void copyin (CVector < _BYTE > &vecDataIn, size_t iSegNum,
+                       size_t bytes);
+  virtual void cachelast (CVector < _BYTE > &vecDataIn, size_t iSegSize);
+  virtual void copylast ();
 
-    unsigned int gzGetOriginalSize () const;
+//  unsigned int gzGetOriginalSize () const;
 
-    CVector < _BYTE > vecLastSegment;
-    int iLastSegmentNum;
-    int iLastSegmentSize;
-    size_t iSegmentSize;
-    CSegmentTracker Tracker;
-    _BOOLEAN bReady;
+  CVector < _BYTE > vecLastSegment;
+  int iLastSegmentNum;
+  int iLastSegmentSize;
+  size_t iSegmentSize;
+  CSegmentTracker Tracker;
+  _BOOLEAN bReady;
 };
 
 class CBitReassembler:public CReassembler
 {
-  public:
-    CBitReassembler ():CReassembler ()
-    {
-    }
-    CBitReassembler (const CBitReassembler & r):CReassembler (r)
-    {
-    }
+public:
+  CBitReassembler ():CReassembler ()
+  {
+  }
+  CBitReassembler (const CBitReassembler & r):CReassembler (r)
+  {
+  }
 
-  protected:
-    virtual void copyin (CVector < _BYTE > &vecDataIn, size_t iSegNum,
-			 size_t bytes);
-    virtual void cachelast (CVector < _BYTE > &vecDataIn, size_t iSegSize);
-    virtual void copylast ();
+protected:
+  virtual void copyin (CVector < _BYTE > &vecDataIn, size_t iSegNum,
+                       size_t bytes);
+  virtual void cachelast (CVector < _BYTE > &vecDataIn, size_t iSegSize);
+  virtual void copylast ();
 };
 
 typedef CReassembler CByteReassembler;
 
 class CMOTObjectBase
 {
-  public:
+public:
 
-    CMOTObjectBase ():TransportID(-1),ExpireTime(),bPermitOutdatedVersions(false)
-    {
-		Reset ();
-    }
+  CMOTObjectBase ():TransportID(-1),ExpireTime(),bPermitOutdatedVersions(false)
+  {
+    Reset ();
+  }
 
-    virtual ~CMOTObjectBase () { }
+  virtual ~CMOTObjectBase () { }
 
-    virtual void Reset ()
-    {
-		TransportID = -1;
-		ExpireTime.Reset ();
-		bPermitOutdatedVersions = false;
-    }
+  virtual void Reset ()
+  {
+    TransportID = -1;
+    ExpireTime.Reset ();
+    bPermitOutdatedVersions = false;
+  }
 
-    void decodeExtHeader (_BYTE & bParamId,
-			  int &iHeaderFieldLen, int &iDataFieldLen,
-			  CVector < _BINARY > &vecbiHeader) const;
+  void decodeExtHeader (_BYTE & bParamId,
+                        int &iHeaderFieldLen, int &iDataFieldLen,
+                        CVector < _BINARY > &vecbiHeader) const;
 
-    string extractString (CVector < _BINARY > &vecbiData, int iLen) const;
+  string extractString (CVector < _BINARY > &vecbiData, int iLen) const;
 
-    TTransportID TransportID;
-    CDateAndTime ExpireTime;
-    _BOOLEAN bPermitOutdatedVersions;
+  TTransportID TransportID;
+  CDateAndTime ExpireTime;
+  _BOOLEAN bPermitOutdatedVersions;
 
 };
 
-class CMOTDirectory:public CMOTObjectBase
-{
-  public:
+//class CMOTDirectory:public CMOTObjectBase
+//{
+//public:
 
-    CMOTDirectory ():CMOTObjectBase(), iCarouselPeriod(0),
-    iNumberOfObjects(0), iSegmentSize(0),
-    bCompressionFlag(false), bSortedHeaderInformation(false),
-    DirectoryIndex(), vecObjects()
-    {
-    }
+//  CMOTDirectory ():CMOTObjectBase(), iCarouselPeriod(0),
+//    iNumberOfObjects(0), iSegmentSize(0),
+//    bCompressionFlag(false), bSortedHeaderInformation(false),
+//    DirectoryIndex(), vecObjects()
+//  {
+//  }
 
-    CMOTDirectory (const CMOTDirectory & nD):CMOTObjectBase (nD),
-		iCarouselPeriod (nD.iCarouselPeriod),
-		iNumberOfObjects (nD.iNumberOfObjects),
-		iSegmentSize (nD.iSegmentSize),
-		bCompressionFlag (nD.bCompressionFlag),
-		bSortedHeaderInformation (nD.bSortedHeaderInformation),
-		DirectoryIndex (nD.DirectoryIndex)
-    {
-    }
+//  CMOTDirectory (const CMOTDirectory & nD):CMOTObjectBase (nD),
+//    iCarouselPeriod (nD.iCarouselPeriod),
+//    iNumberOfObjects (nD.iNumberOfObjects),
+//    iSegmentSize (nD.iSegmentSize),
+//    bCompressionFlag (nD.bCompressionFlag),
+//    bSortedHeaderInformation (nD.bSortedHeaderInformation),
+//    DirectoryIndex (nD.DirectoryIndex)
+//  {
+//  }
 
-    virtual ~CMOTDirectory ()
-    {
-    }
+//  virtual ~CMOTDirectory ()
+//  {
+//  }
 
-    inline CMOTDirectory & operator= (const CMOTDirectory & nD)
-    {
-		TransportID = nD.TransportID;
-		ExpireTime = nD.ExpireTime;
-		bPermitOutdatedVersions = nD.bPermitOutdatedVersions;
-		bSortedHeaderInformation = nD.bSortedHeaderInformation;
-		bCompressionFlag = nD.bCompressionFlag;
-		iCarouselPeriod = nD.iCarouselPeriod;
-		DirectoryIndex = nD.DirectoryIndex;
-		iNumberOfObjects = nD.iNumberOfObjects;
-		iSegmentSize = nD.iSegmentSize;
+//  inline CMOTDirectory & operator= (const CMOTDirectory & nD)
+//  {
+//    TransportID = nD.TransportID;
+//    ExpireTime = nD.ExpireTime;
+//    bPermitOutdatedVersions = nD.bPermitOutdatedVersions;
+//    bSortedHeaderInformation = nD.bSortedHeaderInformation;
+//    bCompressionFlag = nD.bCompressionFlag;
+//    iCarouselPeriod = nD.iCarouselPeriod;
+//    DirectoryIndex = nD.DirectoryIndex;
+//    iNumberOfObjects = nD.iNumberOfObjects;
+//    iSegmentSize = nD.iSegmentSize;
 
-		return *this;
-    }
+//    return *this;
+//  }
 
-    virtual void Reset ();
+//  virtual void Reset ();
 
-    virtual void AddHeader (CVector < _BINARY > &vecbiHeader);
+//  //virtual void AddHeader (CVector < _BINARY > &vecbiHeader);
 
-	void dump(ostream&);
+//  void dump(ostream&);
 
-    int iCarouselPeriod, iNumberOfObjects, iSegmentSize;
-    _BOOLEAN bCompressionFlag, bSortedHeaderInformation;
-    map < _BYTE, string > DirectoryIndex;
-    vector < TTransportID > vecObjects;
-};
+//  int iCarouselPeriod, iNumberOfObjects, iSegmentSize;
+//  _BOOLEAN bCompressionFlag, bSortedHeaderInformation;
+//  map < _BYTE, string > DirectoryIndex;
+//  vector < TTransportID > vecObjects;
+//};
 
 /* we define this to reduce the need for copy constructors and operator=
    since CReassembler has a good set, the defaults will do for this, but not
@@ -365,137 +365,137 @@ class CMOTDirectory:public CMOTObjectBase
 
 class CMOTObject:public CMOTObjectBase
 {
-  public:
+public:
 
-    CMOTObject ():CMOTObjectBase(), vecbRawData(),
+  CMOTObject ():CMOTObjectBase(), vecbRawData(),
     bComplete(false), bHasHeader(false), Body(),
     strName(""), iBodySize(0), iCharacterSetForName(0), iCharacterSetForDescription(0),
     strFormat(""), strMimeType(""), iCompressionType(0), strContentDescription(""),
     iVersion(0), iUniqueBodyVersion(0), iContentType(0), iContentSubType(0),
     iPriority(0), iRetransmissionDistance(0), vecbProfileSubset(),
     ScopeStart(), ScopeEnd(), iScopeId(0), bReady(false)
-    {
-    }
+  {
+  }
 
-    CMOTObject (const CMOTObject & nO):CMOTObjectBase (nO),
-	bComplete (nO.bComplete),
-	bHasHeader (nO.bHasHeader),
-	strName (nO.strName),
-	iBodySize(nO.iBodySize),
-	iCharacterSetForName (nO.iCharacterSetForName),
-	iCharacterSetForDescription (nO.iCharacterSetForDescription),
-	strFormat (nO.strFormat),
-	strMimeType (nO.strMimeType),
-	iCompressionType (nO.iCompressionType),
-	strContentDescription (nO.strContentDescription),
-	iVersion (nO.iVersion),
-	iUniqueBodyVersion (nO.iUniqueBodyVersion),
-	iContentType (nO.iContentType),
-	iContentSubType (nO.iContentSubType),
-	iPriority (nO.iPriority),
-	iRetransmissionDistance (nO.iRetransmissionDistance),
-	vecbProfileSubset (nO.vecbProfileSubset),
-	ScopeStart (nO.ScopeStart),
-	ScopeEnd (nO.ScopeEnd), iScopeId (nO.iScopeId)
-    {
-        Body = nO.Body;
-        vecbRawData.Init (nO.vecbRawData.Size ());
-        vecbRawData = nO.vecbRawData;
-    }
+  CMOTObject (const CMOTObject & nO):CMOTObjectBase (nO),
+    bComplete (nO.bComplete),
+    bHasHeader (nO.bHasHeader),
+    strName (nO.strName),
+    iBodySize(nO.iBodySize),
+    iCharacterSetForName (nO.iCharacterSetForName),
+    iCharacterSetForDescription (nO.iCharacterSetForDescription),
+    strFormat (nO.strFormat),
+    strMimeType (nO.strMimeType),
+    iCompressionType (nO.iCompressionType),
+    strContentDescription (nO.strContentDescription),
+    iVersion (nO.iVersion),
+    iUniqueBodyVersion (nO.iUniqueBodyVersion),
+    iContentType (nO.iContentType),
+    iContentSubType (nO.iContentSubType),
+    iPriority (nO.iPriority),
+    iRetransmissionDistance (nO.iRetransmissionDistance),
+    vecbProfileSubset (nO.vecbProfileSubset),
+    ScopeStart (nO.ScopeStart),
+    ScopeEnd (nO.ScopeEnd), iScopeId (nO.iScopeId)
+  {
+    Body = nO.Body;
+    vecbRawData.Init (nO.vecbRawData.Size ());
+    vecbRawData = nO.vecbRawData;
+  }
 
-    virtual ~ CMOTObject ()
-    {
-    }
+  virtual ~ CMOTObject ()
+  {
+  }
 
-    inline CMOTObject & operator= (const CMOTObject & nO)
-    {
-        TransportID = nO.TransportID;
-        ExpireTime = nO.ExpireTime;
-        bPermitOutdatedVersions = nO.bPermitOutdatedVersions;
-        bComplete = nO.bComplete;
-        bHasHeader = nO.bHasHeader;
-        strFormat = nO.strFormat;
-        strName = nO.strName;
-        iBodySize = nO.iBodySize;
-        iCharacterSetForName = nO.iCharacterSetForName;
-        iCharacterSetForDescription = nO.iCharacterSetForDescription;
-        strMimeType = nO.strMimeType;
-        iCompressionType = nO.iCompressionType;
-        strContentDescription = nO.strContentDescription;
-        iVersion = nO.iVersion;
-        iUniqueBodyVersion = nO.iUniqueBodyVersion;
-        iContentType = nO.iContentType;
-        iContentSubType = nO.iContentSubType;
-        iPriority = nO.iPriority;
-        iRetransmissionDistance = nO.iRetransmissionDistance;
-        vecbProfileSubset = nO.vecbProfileSubset;
-        ScopeStart = nO.ScopeStart;
-        ScopeEnd = nO.ScopeEnd;
-        iScopeId = nO.iScopeId;
-        Body = nO.Body;
+  inline CMOTObject & operator= (const CMOTObject & nO)
+  {
+    TransportID = nO.TransportID;
+    ExpireTime = nO.ExpireTime;
+    bPermitOutdatedVersions = nO.bPermitOutdatedVersions;
+    bComplete = nO.bComplete;
+    bHasHeader = nO.bHasHeader;
+    strFormat = nO.strFormat;
+    strName = nO.strName;
+    iBodySize = nO.iBodySize;
+    iCharacterSetForName = nO.iCharacterSetForName;
+    iCharacterSetForDescription = nO.iCharacterSetForDescription;
+    strMimeType = nO.strMimeType;
+    iCompressionType = nO.iCompressionType;
+    strContentDescription = nO.strContentDescription;
+    iVersion = nO.iVersion;
+    iUniqueBodyVersion = nO.iUniqueBodyVersion;
+    iContentType = nO.iContentType;
+    iContentSubType = nO.iContentSubType;
+    iPriority = nO.iPriority;
+    iRetransmissionDistance = nO.iRetransmissionDistance;
+    vecbProfileSubset = nO.vecbProfileSubset;
+    ScopeStart = nO.ScopeStart;
+    ScopeEnd = nO.ScopeEnd;
+    iScopeId = nO.iScopeId;
+    Body = nO.Body;
 
-        vecbRawData.Init (nO.vecbRawData.Size ());
-        vecbRawData = nO.vecbRawData;
+    vecbRawData.Init (nO.vecbRawData.Size ());
+    vecbRawData = nO.vecbRawData;
 
-        return *this;
-    }
+    return *this;
+  }
 
 
-    void Reset ()
-    {
-        vecbRawData.Init (0);
-        bComplete = false;
-        bHasHeader = false;
-        Body.Reset ();
-        strFormat = "";
-        strName = "";
-        iBodySize = 0;
-        iCharacterSetForName = 0;
-        iCharacterSetForDescription = 0;
-        strMimeType = "";
-        iCompressionType = 0;
-        strContentDescription = "";
-        iVersion = 0;
-        iUniqueBodyVersion = 0;
-        iContentType = 0;
-        iContentSubType = 0;
-        iPriority = 0;
-        iRetransmissionDistance = 0;
-        vecbProfileSubset.clear ();
-        ScopeStart.Reset ();
-        ScopeEnd.Reset ();
-        iScopeId = 0;
-    }
+  void Reset ()
+  {
+    vecbRawData.Init (0);
+    bComplete = false;
+    bHasHeader = false;
+    Body.Reset ();
+    strFormat = "";
+    strName = "";
+    iBodySize = 0;
+    iCharacterSetForName = 0;
+    iCharacterSetForDescription = 0;
+    strMimeType = "";
+    iCompressionType = 0;
+    strContentDescription = "";
+    iVersion = 0;
+    iUniqueBodyVersion = 0;
+    iContentType = 0;
+    iContentSubType = 0;
+    iPriority = 0;
+    iRetransmissionDistance = 0;
+    vecbProfileSubset.clear ();
+    ScopeStart.Reset ();
+    ScopeEnd.Reset ();
+    iScopeId = 0;
+  }
 
-	void dump(ostream&);
+//  void dump(ostream&);
 
-    void AddHeader (CVector < _BINARY > &header);
+//  void AddHeader (CVector < _BINARY > &header);
 
-    /* for encoding */
-    CVector < _BYTE > vecbRawData;
+  /* for encoding */
+  CVector < _BYTE > vecbRawData;
 
-    _BOOLEAN bComplete, bHasHeader;
-    CByteReassembler Body;
-    string strName;
-    int iBodySize;
-    int iCharacterSetForName;
-    int iCharacterSetForDescription;
-    string strFormat;
-    string strMimeType;
-    int iCompressionType;
-    string strContentDescription;
-    int iVersion, iUniqueBodyVersion;
-    int iContentType, iContentSubType;
-    int iPriority;
-    int iRetransmissionDistance;
-    vector < _BYTE > vecbProfileSubset;
+  _BOOLEAN bComplete, bHasHeader;
+  CByteReassembler Body;
+  string strName;
+  int iBodySize;
+  int iCharacterSetForName;
+  int iCharacterSetForDescription;
+  string strFormat;
+  string strMimeType;
+  int iCompressionType;
+  string strContentDescription;
+  int iVersion, iUniqueBodyVersion;
+  int iContentType, iContentSubType;
+  int iPriority;
+  int iRetransmissionDistance;
+  vector < _BYTE > vecbProfileSubset;
 
-    /* the following for EPG Objects */
-    CDateAndTime ScopeStart, ScopeEnd;
-    int iScopeId;
+  /* the following for EPG Objects */
+  CDateAndTime ScopeStart, ScopeEnd;
+  int iScopeId;
 
-  protected:
-    _BOOLEAN bReady;
+protected:
+  _BOOLEAN bReady;
 };
 
 
@@ -517,7 +517,7 @@ public:
   void Reset ();
   _BOOLEAN GetDataGroup (CVector < _BINARY > &vecbiNewData);
   void SetMOTObject (CMOTObject & NewMOTObject, int bytesAvailable);
-//  void SetMOTObjectRunIn (CMOTObject & NewMOTObject);
+  //  void SetMOTObjectRunIn (CMOTObject & NewMOTObject);
   _REAL GetProgPerc () const;
   int iNumSegStore ;
   void prepareSegmentList(unsigned int repetition=1); // ON4QZ
@@ -535,9 +535,9 @@ protected:
   void PartitionUnits (CVector < _BINARY > &vecbiSource,
                        CVector < CVector < _BINARY > >&vecbiDest,
                        const int iPartiSize);
-//  void PartitionUnitsRunIn (CVector < _BINARY > &vecbiSource,
-//                            CVector < CVector < _BINARY > >&vecbiDest,
-//                            const int iPartiSize);
+  //  void PartitionUnitsRunIn (CVector < _BINARY > &vecbiSource,
+  //                            CVector < CVector < _BINARY > >&vecbiDest,
+  //                            const int iPartiSize);
 
   void GenMOTObj (CVector < _BINARY > &vecbiData,
                   CVector < _BINARY > &vecbiSeg, const _BOOLEAN bHeader,
@@ -559,57 +559,57 @@ protected:
 
 /* Decoder ------------------------------------------------------------------ */
 
-class CMOTDABDec
-{
-  public:
+//class CMOTDABDec
+//{
+//public:
 
-    CMOTDABDec ():MOTmode (unknown), MOTHeaders(),
-    MOTDirectoryEntity(), MOTDirComprEntity(),
-    MOTDirectory(), MOTCarousel(), qiNewObjects()
-    {
-    }
+//  CMOTDABDec ():MOTmode (unknown), MOTHeaders(),
+//    MOTDirectoryEntity(), MOTDirComprEntity(),
+//    MOTDirectory(), MOTCarousel(), qiNewObjects()
+//  {
+//  }
 
-    virtual ~ CMOTDABDec ()
-    {
-    }
+//  virtual ~ CMOTDABDec ()
+//  {
+//  }
 
-    /* client methods */
-    void GetNextObject (CMOTObject & NewMOTObject);
+//  /* client methods */
+////  void GetNextObject (CMOTObject & NewMOTObject);
 
-    void GetObject (CMOTObject & NewMOTObject, TTransportID TransportID)
-    {
-        NewMOTObject = MOTCarousel[TransportID];
-    }
+////  void GetObject (CMOTObject & NewMOTObject, TTransportID TransportID)
+////  {
+////    NewMOTObject = MOTCarousel[TransportID];
+////  }
 
-    void GetDirectory (CMOTDirectory & MOTDirectoryOut)
-    {
-        MOTDirectoryOut = MOTDirectory;
-    }
+////  void GetDirectory (CMOTDirectory & MOTDirectoryOut)
+////  {
+////    MOTDirectoryOut = MOTDirectory;
+////  }
 
-    _BOOLEAN NewObjectAvailable ();
+////  _BOOLEAN NewObjectAvailable ();
 
-    /* push from lower level */
-    void AddDataUnit (CVector < _BINARY > &vecbiNewData);
+//  /* push from lower level */
+////  void AddDataUnit (CVector < _BINARY > &vecbiNewData);
 
-  protected:
+//protected:
 
-	void ProcessDirectory (CBitReassembler &MOTDir);
+////  void ProcessDirectory (CBitReassembler &MOTDir);
 
-    void DeliverIfReady (TTransportID TransportID);
+////  void DeliverIfReady (TTransportID TransportID);
 
-    /* These fields are the in-progress carousel objects */
-    enum
-    { unknown, headerMode, directoryMode } MOTmode;
-    /* strictly, there should be only one of these! */
-    map < TTransportID, CBitReassembler > MOTHeaders;
-    CBitReassembler MOTDirectoryEntity;
-    CBitReassembler MOTDirComprEntity;
+//  /* These fields are the in-progress carousel objects */
+//  enum
+//  { unknown, headerMode, directoryMode } MOTmode;
+//  /* strictly, there should be only one of these! */
+//  map < TTransportID, CBitReassembler > MOTHeaders;
+//  CBitReassembler MOTDirectoryEntity;
+//  CBitReassembler MOTDirComprEntity;
 
-    /* These fields are the cached complete carousel */
-    CMOTDirectory MOTDirectory;
-    map < TTransportID, CMOTObject > MOTCarousel;
-    queue < TTransportID > qiNewObjects;
-};
+//  /* These fields are the cached complete carousel */
+//  CMOTDirectory MOTDirectory;
+//  map < TTransportID, CMOTObject > MOTCarousel;
+//  queue < TTransportID > qiNewObjects;
+//};
 
 #endif // !defined(DABMOT_H__3B0UBVE98732KJVEW363E7A0D31912__INCLUDED_)
 

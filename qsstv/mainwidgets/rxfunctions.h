@@ -4,7 +4,7 @@
 #include <QThread>
 #include "appdefs.h"
 #include "sstv/syncprocessor.h"
-#include "utils/buffermanag.h"
+#include "buffermanag.h"
 
 
 
@@ -32,6 +32,7 @@ public:
   QString getModeStr();
   sstvRx  *sstvRxPtr;
   void stopThread();
+  bool rxBusy();
 
 #ifndef QT_NO_DEBUG
   unsigned int setOffset(unsigned int offset,bool ask);

@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -74,7 +74,7 @@ bool soundPulse::init(int samplerate)
   // opening device
   sname=QString("capture %1").arg(getpid());
   sd[0].stream = pa_simple_new(NULL, shortName.toLatin1().data(), sd[0].dir, NULL,sname.toLatin1().data(), &sd[0].stream_params, NULL,&sd[0].buffer_attrs, &err);
-  //  sd[0].stream = pa_simple_new(NULL, shortName.toLatin1().data(), sd[0].dir, NULL,sname.toLatin1().data(), &sd[0].stream_params, NULL,&sd[0].buffer_attrs, &err);
+//  sd[0].stream = pa_simple_new(NULL, shortName.toLatin1().data(), sd[0].dir, NULL,sname.toLatin1().data(), &sd[0].stream_params, NULL,&sd[0].buffer_attrs, &err);
   if(sd[0].stream==NULL)
   {
     errorHandler("PulseAudio read init error",QString(pa_strerror(err)));
@@ -97,6 +97,7 @@ bool soundPulse::init(int samplerate)
 
 int soundPulse::read(int &countAvailable)
 {
+  if(!soundDriverOK) return 0;
   int err=PA_OK;
   pa_usec_t latency;
   latency = pa_simple_get_latency(sd[0].stream, &err);
@@ -106,16 +107,24 @@ int soundPulse::read(int &countAvailable)
     return -1;
   }
   countAvailable= pa_usec_to_bytes(latency, &sd[0].stream_params);
-  if (pa_simple_read(sd[0].stream, tempRXBuffer,sizeof(qint16)*DOWNSAMPLESIZE, &err) <0)
-  {
-    errorHandler("PulseAudio read error",QString(pa_strerror(err)));
-    return -1;
-  }
-  return  DOWNSAMPLESIZE;
+  if(countAvailable>=DOWNSAMPLESIZE)
+    {
+      if (pa_simple_read(sd[0].stream, tempRXBuffer,sizeof(qint16)*DOWNSAMPLESIZE, &err) <0)
+      {
+        errorHandler("PulseAudio read error",QString(pa_strerror(err)));
+        return -1;
+      }
+      else
+        {
+          return DOWNSAMPLESIZE;
+        }
+    }
+  return 0;
 }
 
 int soundPulse::write(uint numFrames)
 {
+  if(!soundDriverOK) return 0;
   int err;
   if(numFrames!=0)
     {
@@ -136,6 +145,7 @@ void soundPulse::waitPlaybackEnd()
 
 void soundPulse::flushCapture()
 {
+  if(!soundDriverOK) return;
   int err=PA_OK;
   pa_usec_t t = pa_simple_get_latency(sd[0].stream, &err);
   if (t && err == PA_OK)
@@ -162,6 +172,7 @@ void soundPulse::flushCapture()
 void soundPulse::flushPlayback()
 {
   int err;
+  if(!soundDriverOK) return;
   if(pa_simple_flush (sd[1].stream, &err)<0)
   {
     errorHandler("flush: ", QString(pa_strerror(err)));

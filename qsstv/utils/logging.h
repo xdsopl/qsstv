@@ -6,8 +6,8 @@
 #include <QFile>
 #include <QMutex>
 #include <QTime>
-#include <bitset>
 #include <QSettings>
+#include <QBitArray>
 #include "loggingparams.h"
 
 #ifndef QT_NO_DEBUG
@@ -16,10 +16,14 @@
 
 #define errorOut() qDebug()
 #ifdef ENABLELOGGING
-#define addToLog(x,y) logFilePtr->add(__FILE__,__func__,__LINE__,x,y)
+#define addToLog(x,y) logFilePtr->add(__FILE__,__func__,__LINE__,x,y,false)
+#define addToLogDebug(x,y) logFilePtr->add(__FILE__,__func__,__LINE__,x,y,true)
 #else
 #define addToLog(x,y) {}
+#define addToLogDebug(x,y) {}
 #endif
+
+
 
 class QTextStream;
 
@@ -30,12 +34,12 @@ class logFile
     logFile(QString logname);
     ~logFile();
     bool open(QString logname);
-    void add(QString t,short unsigned int posMask);
-    void add(const char *fileName,const char *functionName, int line, QString t,short unsigned int posMask);
+    void add(QString t, short unsigned int posMask, bool debug);
+    void add(const char *fileName,const char *functionName, int line, QString t,short unsigned int posMask,bool debug=false);
     void dummyAdd(QString,int) {}
     void addToAux(QString t);
     bool setEnabled(bool e);
-    void setLogMask(std::bitset<NUMDEBUGLEVELS> logMask);
+    void setLogMask(QBitArray logMask);
     void maskSelect(QWidget *wPtr=0);
     void readSettings();
     void writeSettings();
@@ -53,7 +57,7 @@ class logFile
     bool enabled;
     QMutex mutex;
     QTime timer;
-    std::bitset <NUMDEBUGLEVELS> mask;
+    QBitArray maskBA;
     QString savedLogEntry;
     int logCount;
     int savedPosMask;

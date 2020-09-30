@@ -42,103 +42,107 @@ soundBase::soundBase(QObject *parent) : QThread(parent)
   downsampleFilterPtr=new downsampleFilter(DOWNSAMPLESIZE,true);
 }
 
+soundBase::~soundBase()
+{
+    delete downsampleFilterPtr;
+}
 
 void soundBase::run()
 {
   stopThread=false;
   unsigned int delay=0;  //todo check use of delay
   while(!stopThread)
-  {
-    if((captureState==CPINIT) &&   (playbackState==PBINIT))
-      {
-        msleep(100);
-        continue;
-      }
-    switch (captureState)
     {
-      case CPINIT:
-      break;
-      case CPSTARTING:
-        prepareCapture();
-        flushCapture();
-        rxBuffer.reset(); //clear the rxBuffer
-        rxVolumeBuffer.reset();
-        switchCaptureState(CPRUNNING);
-      break;
-      case CPRUNNING:
-        if (capture()==0) msleep(1);
-      break;
-      case CPCALIBRATESTART:
-        prepareCapture();
-        flushCapture();
-        switchCaptureState(CPCALIBRATEWAIT);
-      break;
-      case CPCALIBRATEWAIT:
-        if(captureCalibration(true)==0) msleep(0);
-      break;
-      case CPCALIBRATE:
-        if(captureCalibration(false)==0) msleep(0);
-      break;
-      case CPEND:
-        switchCaptureState(CPINIT);
-      break;
-    }
-    switch(playbackState)
-    {
-      case PBINIT:
-      break;
-      case PBSTARTING:
-        preparePlayback();
-        flushPlayback();
-        prebuf=true;
-        if (play()==0) msleep(10);
-        else
+      if((captureState==CPINIT) &&   (playbackState==PBINIT))
         {
-          prebuf=false;
-          switchPlaybackState(PBRUNNING);
-          addToLog("playback started",LOGSOUND);
+          msleep(100);
+          continue;
         }
-      break;
-      case PBRUNNING:
-        if (play()==0)
+      switch (captureState)
         {
-          addToLog(QString("playback stopped: delay=%1").arg(delay),LOGSOUND);
-          waitPlaybackEnd();
-          msleep(delay);
-          waveOut.close();
-          addToLog("playback stopped",LOGSOUND);
-          switchPlaybackState(PBINIT);
+        case CPINIT:
+          break;
+        case CPSTARTING:
+          prepareCapture();
+          flushCapture();
+          rxBuffer.reset(); //clear the rxBuffer
+          rxVolumeBuffer.reset();
+          switchCaptureState(CPRUNNING);
+          break;
+        case CPRUNNING:
+          if (capture()==0) msleep(1);
+          break;
+        case CPCALIBRATESTART:
+          prepareCapture();
+          flushCapture();
+          switchCaptureState(CPCALIBRATEWAIT);
+          break;
+        case CPCALIBRATEWAIT:
+          if(captureCalibration(true)==0) msleep(0);
+          break;
+        case CPCALIBRATE:
+          if(captureCalibration(false)==0) msleep(0);
+          break;
+        case CPEND:
+          switchCaptureState(CPINIT);
+          break;
         }
-        msleep(0);
-      break;
-      case PBCALIBRATESTART:
+      switch(playbackState)
         {
+        case PBINIT:
+          break;
+        case PBSTARTING:
           preparePlayback();
           flushPlayback();
-          switchPlaybackState(PBCALIBRATEWAIT);
-        }
-      break;
-      case PBCALIBRATEWAIT:
-        {
-          if(playbackCalibration(true)==0)
+          prebuf=true;
+          if (play()==0) msleep(10);
+          else
             {
-              msleep(0);
+              prebuf=false;
+              switchPlaybackState(PBRUNNING);
+              addToLog("playback started",LOGSOUND);
             }
-        }
-      break;
-      case PBCALIBRATE:
-        {
-          if(playbackCalibration(false)==0)
+          break;
+        case PBRUNNING:
+          if (play()==0)
             {
-              msleep(0);
+              addToLog(QString("playback stopped: delay=%1").arg(delay),LOGSOUND);
+              waitPlaybackEnd();
+              msleep(delay);
+              waveOut.close();
+              addToLog("playback stopped",LOGSOUND);
+              switchPlaybackState(PBINIT);
             }
+          msleep(0);
+          break;
+        case PBCALIBRATESTART:
+          {
+            preparePlayback();
+            flushPlayback();
+            switchPlaybackState(PBCALIBRATEWAIT);
+          }
+          break;
+        case PBCALIBRATEWAIT:
+          {
+            if(playbackCalibration(true)==0)
+              {
+                msleep(0);
+              }
+          }
+          break;
+        case PBCALIBRATE:
+          {
+            if(playbackCalibration(false)==0)
+              {
+                msleep(0);
+              }
+          }
+          break;
+        case PBEND:
+          switchPlaybackState(PBINIT);
+          break;
         }
-      break;
-      case PBEND:
-        switchPlaybackState(PBINIT);
-      break;
     }
-  }
 }
 
 int soundBase::capture()
@@ -146,38 +150,39 @@ int soundBase::capture()
   int count=0;
   if(rxBuffer.spaceLeft()<RXSTRIPE) return 0;
   if(soundRoutingInput==SNDINFROMFILE)
-  {
-    count=waveIn.read((qint16*)tempRXBuffer,DOWNSAMPLESIZE);
-    //delay to give realtime feeling
-    if(count<0)
     {
-      // we have an error in reading the wav file
-      waveIn.close();
-      switchCaptureState(CPINIT);
+      count=waveIn.read((qint16*)tempRXBuffer,DOWNSAMPLESIZE);
+      //delay to give realtime feeling
+      if(count<0)
+        {
+          // we have an error in reading the wav file
+          waveIn.close();
+          switchCaptureState(CPINIT);
+        }
+      else if(count==0)
+        {
+          switchCaptureState(CPEND);
+        }
+      //    msleep((1000*count)/sampleRate);
+      msleep((100*count)/sampleRate);
     }
-    else if(count==0)
-    {
-      switchCaptureState(CPEND);
-    }
-//    msleep((1000*count)/sampleRate);
-    msleep((100*count)/sampleRate);
-  }
   else if(soundDriverOK)
-  {
-    // read from soundcard
-    count=read(countAvailable);
-    if(count==0) return 0;
-    if(count !=DOWNSAMPLESIZE)
     {
-      switchCaptureState(CPINIT);
+      // read from soundcard
+      count=read(countAvailable);
+      if(count==0) return 0;
+      if(count !=DOWNSAMPLESIZE)
+        {
+          switchCaptureState(CPINIT);
+        }
+
+      if((storedFrames<=(ulong)recordingSize*1048576L) && (soundRoutingInput==SNDINCARDTOFILE))
+        {
+          addToLog(QString("writen %1 tofile").arg(count),LOGSOUND);
+          waveOut.write((quint16*)tempRXBuffer,count,false);
+          storedFrames+=count;
+        }
     }
-    if(storedFrames<=(ulong)recordingSize*1048576L)
-      {
-        addToLog(QString("writen %1 tofile").arg(count),LOGSOUND);
-        waveOut.write((quint16*)tempRXBuffer,count);
-        storedFrames+=count;
-      }
-  }
   downsampleFilterPtr->downSample4(tempRXBuffer);
   volume=downsampleFilterPtr->avgVolumeDb;
   rxBuffer.putNoCheck(downsampleFilterPtr->filteredDataPtr(),RXSTRIPE);
@@ -192,29 +197,29 @@ int soundBase::captureCalibration(bool leadIn)
 
   if(count==0) return 0;
   if(leadIn)
-  {
-    leadInCounter++;
-    if(leadInCounter==CALIBRATIONLEADIN)
     {
-      stopwatch.start();
-      mutex.lock();
-      clock_gettime(CLOCK_MONOTONIC,&ts);
-      ustartcalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0;
-      calibrationFrames=0;
-      mutex.unlock();
-      switchCaptureState(CPCALIBRATE);
+      leadInCounter++;
+      if(leadInCounter==CALIBRATIONLEADIN)
+        {
+          stopwatch.start();
+          mutex.lock();
+          clock_gettime(CLOCK_MONOTONIC,&ts);
+          ustartcalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0;
+          calibrationFrames=0;
+          mutex.unlock();
+          switchCaptureState(CPCALIBRATE);
+        }
     }
-  }
   else
-  {
-    mutex.lock();
-    calibrationFrames++;
-    calibrationTime=stopwatch.elapsed();
-    clock_gettime(CLOCK_MONOTONIC,&ts);
-    ucalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0 -ustartcalibrationTime;
-    mutex.unlock();
-    //logFilePtr->addToAux(QString("%1\t%2\t%3").arg(countAvailable).arg(calibrationFrames).arg(calibrationTime) );
-  }
+    {
+      mutex.lock();
+      calibrationFrames++;
+      calibrationTime=stopwatch.elapsed();
+      clock_gettime(CLOCK_MONOTONIC,&ts);
+      ucalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0 -ustartcalibrationTime;
+      mutex.unlock();
+      //logFilePtr->addToAux(QString("%1\t%2\t%3").arg(countAvailable).arg(calibrationFrames).arg(calibrationTime) );
+    }
   addToLog(QString("read report count:%1 available %2 elapsed qtime %3, time: %4").arg(count).arg(countAvailable).arg(calibrationTime).arg(ucalibrationTime),LOGSOUND);
   return count;
 }
@@ -231,48 +236,48 @@ bool soundBase::calibrate(bool isCapture)
   prevFrames=0;
   if (!isRunning()) start();
   if (isCapture)
-  {
-    switchCaptureState(CPCALIBRATESTART);
-  }
+    {
+      switchCaptureState(CPCALIBRATESTART);
+    }
   else
-  {
-    txBuffer.fill(0);
-    switchPlaybackState(PBCALIBRATESTART);
-  }
+    {
+      txBuffer.fill(0);
+      switchPlaybackState(PBCALIBRATESTART);
+    }
   return true;
 }
 
 int soundBase::playbackCalibration(bool leadIn)
 {
   int count;
-//  count=write(DOWNSAMPLESIZE);
+  //  count=write(DOWNSAMPLESIZE);
   count=write(CALIBRATIONSIZE);  // debug joma
   addToLog(QString("calib count %1").arg(count),LOGCALIB);
   if(leadIn)
-  {
-    leadInCounter++;
-    if(leadInCounter==CALIBRATIONLEADIN)
     {
-//      stopwatch.start();
-      mutex.lock();
-      clock_gettime(CLOCK_MONOTONIC,&ts);
-      ustartcalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0;
-      addToLog(QString("calib start time %1").arg(ustartcalibrationTime),LOGCALIB);
-      calibrationFrames=0;
-      mutex.unlock();
-      switchPlaybackState(PBCALIBRATE);
+      leadInCounter++;
+      if(leadInCounter==CALIBRATIONLEADIN)
+        {
+          //      stopwatch.start();
+          mutex.lock();
+          clock_gettime(CLOCK_MONOTONIC,&ts);
+          ustartcalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0;
+          addToLog(QString("calib start time %1").arg(ustartcalibrationTime),LOGCALIB);
+          calibrationFrames=0;
+          mutex.unlock();
+          switchPlaybackState(PBCALIBRATE);
+        }
     }
-  }
   else
-  {
-    mutex.lock();
-    calibrationFrames++;
-    clock_gettime(CLOCK_MONOTONIC,&ts);
-    ucalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0 -ustartcalibrationTime;
-    mutex.unlock();
-//    addToLog(QString("calib time %1 frames %2").arg(ucalibrationTime).arg(calibrationFrames),LOGCALIB);
-    //logFilePtr->addToAux(QString("%1\t%2\t%3").arg(countAvailable).arg(calibrationFrames).arg(calibrationTime) );
-  }
+    {
+      mutex.lock();
+      calibrationFrames++;
+      clock_gettime(CLOCK_MONOTONIC,&ts);
+      ucalibrationTime=(double)ts.tv_sec +(double)ts.tv_nsec / 1000000000.0 -ustartcalibrationTime;
+      mutex.unlock();
+      //    addToLog(QString("calib time %1 frames %2").arg(ucalibrationTime).arg(calibrationFrames),LOGCALIB);
+      //logFilePtr->addToAux(QString("%1\t%2\t%3").arg(countAvailable).arg(calibrationFrames).arg(calibrationTime) );
+    }
   return count;
 }
 
@@ -284,7 +289,7 @@ bool soundBase::calibrationCount(unsigned int &frames, double &elapsedTime)
   mutex.unlock();
   if(frames==prevFrames) return false;
   prevFrames=frames;
-//  addToLog(QString("calib ok time %1 frames %2").arg(elapsedTime).arg(frames),LOGCALIB);
+  //  addToLog(QString("calib ok time %1 frames %2").arg(elapsedTime).arg(frames),LOGCALIB);
   return true;
 }
 
@@ -298,9 +303,12 @@ void soundBase::idleTX()
 
 void soundBase::idleRX()
 {
+  captureState=CPINIT;
+
+
   waveOut.closeFile();
   waveIn.closeFile();
-  captureState=CPINIT;
+
 }
 
 
@@ -310,9 +318,9 @@ void soundBase::stopSoundThread()
   idleTX();
   stopThread=true;
   while(isRunning())
-  {
-    QApplication::processEvents();
-  }
+    {
+      QApplication::processEvents();
+    }
   closeDevices();
 }
 
@@ -321,18 +329,18 @@ bool soundBase::startCapture()
 {
   switchPlaybackState(PBINIT);
   soundIOPtr->rxBuffer.reset();
-  soundIOPtr->rxVolumeBuffer.reset();
+//  soundIOPtr->rxVolumeBuffer.reset();
   downsampleFilterPtr->init();
   storedFrames=0;
   switch(soundRoutingInput)
-  {
+    {
     case SNDINFROMFILE:
       if(!waveIn.openFileForRead("",true))
-      {
-        errorHandler("File not opened","");
-        return false;
-      }
-    break;
+        {
+          errorHandler("File not opened","");
+          return false;
+        }
+      break;
     case SNDINCARDTOFILE:
       {
         if(!soundDriverOK)
@@ -341,20 +349,20 @@ bool soundBase::startCapture()
             return false;
           }
         if(!waveOut.openFileForWrite("",true,true)) // always output stereo
-        {
-          errorHandler("File not opened","");
-          return false;
-        }
+          {
+            errorHandler("File not opened","");
+            return false;
+          }
       }
-    break;
+      break;
     case SNDINCARD:
       if(!soundDriverOK)
         {
           errorHandler("No valid sound device (see configuration)","");
           return false;
         }
-    break;
-  }
+      break;
+    }
   switchCaptureState(CPSTARTING);
   return true;
 }
@@ -376,18 +384,18 @@ int soundBase::play()
       framesWritten=0;
     }
   if(soundRoutingOutput==SNDOUTTOFILE)  // output the wav-file
-  {
-
-    if(storedFrames<=(ulong)recordingSize*1048576L)
     {
-      waveOut.write((quint16*)txBuffer.readPointer(),numFrames); //always stereo
-      storedFrames+=numFrames;
+
+      if(storedFrames<=(ulong)recordingSize*1048576L)
+        {
+          waveOut.write((quint16*)txBuffer.readPointer(),numFrames,true); //always stereo
+          storedFrames+=numFrames;
+        }
     }
-  }
   txBuffer.copyNoCheck(tempTXBuffer,numFrames);
   addToLog(QString("frames to write: %1 at %2 buffered:%3").arg(numFrames).arg(txBuffer.getReadIndex()).arg(txBuffer.count()),LOGSOUND);
 
-//  framesWritten=write(numFrames);
+  //  framesWritten=write(numFrames);
   framesWritten=write(DOWNSAMPLESIZE);
   addToLog(QString("frames written: %1").arg(framesWritten),LOGSOUND);
   if(framesWritten<0)
@@ -408,14 +416,14 @@ bool soundBase::startPlayback()
   storedFrames=0;
   soundIOPtr->txBuffer.reset();
   if(soundRoutingOutput==SNDOUTTOFILE)
-  {
-
-    if(!waveOut.openFileForWrite("",true,true)) // indicate stereo
     {
-      errorHandler("File not opened","");
-      return false;
+
+      if(!waveOut.openFileForWrite("",true,true)) // indicate stereo
+        {
+          errorHandler("File not opened","");
+          return false;
+        }
     }
-  }
   playbackState=PBSTARTING;
 
   addToLog(QString("start playback, txbuffercount: %1").arg(txBuffer.count()),LOGSOUND);

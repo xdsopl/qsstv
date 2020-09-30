@@ -54,6 +54,7 @@ void drmStatusFrame::init()
   prevWMERFAC=-9999;
   prevFreqOff=-9999;
   prevBlockCount=-1;
+  drmBusyCount=0;
 }
 
 
@@ -103,16 +104,33 @@ void drmStatusFrame::setStatus()
   if(prevFacValid!=fac_valid)
     {
       prevFacValid=fac_valid;
-      if(fac_valid==1)  ui->facLED->setPixmap(*greenPXM);
+      if(fac_valid==1)
+        {
+          ui->facLED->setPixmap(*greenPXM);
+        }
       else
         {
           ui->facLED->setPixmap(*redPXM);
           if(prevMscValid!=INVALID) ui->mscLED->setPixmap(*redPXM);
           prevMscValid=INVALID;
-          return;
+
         }
     }
-
+  if(fac_valid==1)
+    {
+      drmBusyCount=10;
+      drmBusy=true;
+    }
+  else if(drmBusyCount<=0)
+    {
+      drmBusyCount=0;
+      drmBusy=false;
+      return;
+    }
+  else
+    {
+      drmBusyCount--;
+    }
 
   switch(robustness_mode)
     {

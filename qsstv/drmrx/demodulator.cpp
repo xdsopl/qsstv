@@ -4,7 +4,7 @@
 #include <math.h>
 #include <float.h>
 #include "nrutil.h"
-#include "utils/supportfunctions.h"
+#include "supportfunctions.h"
 
 #include <QDebug>
 
@@ -151,6 +151,7 @@ bool demodulator::demodulate(float *sigin,int numSamples)
     {
       return false;
     }
+
   if(channelEstimation())
     {
       channel_decoding();

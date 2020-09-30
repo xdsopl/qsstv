@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -29,6 +29,7 @@
 #include <QMessageBox>
 #include "txwidget.h"
 #include "configparams.h"
+#include "dispatcher.h"
 
 
 #define MAXCONFLEN 128
@@ -42,386 +43,443 @@ bool radiolistLoaded=false;
 
 int collect(const rig_caps *caps,rig_ptr_t)
 {
-    capsList.append(caps);
-    return 1;
+  capsList.append(caps);
+  return 1;
 }
 
 rigControl::rigControl(int radioIndex)
 {
-    rigControlEnabled=false;
-    catParams.configLabel=QString("radio%1").arg(radioIndex);
-    rig_set_debug(RIG_DEBUG_NONE);
-    getRadioList();
-    serialP=0;
-    lastFrequency=0.0;
-    xmlModes<<"USB"<<"LSB"<<"FM"<<"AM";
+  rigControlEnabled=false;
+  catParams.configLabel=QString("radio%1").arg(radioIndex);
+  rig_set_debug(RIG_DEBUG_NONE);
+  getRadioList();
+  serialP=0;
+  lastFrequency=0.0;
+  xmlModes<<"USB"<<"LSB"<<"FM"<<"AM";
 }
 
 rigControl::~rigControl()
 {
-    rig_close(my_rig); /* close port */
-    rig_cleanup(my_rig); /* if you care about memory */
+  rig_close(my_rig); /* close port */
+  rig_cleanup(my_rig); /* if you care about memory */
 }
 
 bool rigControl::init()
 {
-    int retcode;
-    if(!catParams.enableCAT) return false;
+  int retcode;
+  if(!catParams.enableCAT) return false;
 
-    catParams.radioModelNumber=getModelNumber(getRadioModelIndex());
-    my_rig = rig_init(catParams.radioModelNumber);
-    if(!my_rig)
+  catParams.radioModelNumber=getModelNumber(getRadioModelIndex());
+  my_rig = rig_init(catParams.radioModelNumber);
+  if(!my_rig)
     {
-        addToLog(QString("Error in connection using radio model %1").arg(catParams.radioModel),LOGALL);
-        initError=QString("Error in connection using radio model %1").arg(catParams.radioModel);
-        return false;
+      addToLogDebug(QString("Error in connection using radio model %1").arg(catParams.radioModel),LOGALL);
+      initError=QString("Error in connection using radio model %1").arg(catParams.radioModel);
+      return false;
     }
 
-    if(QString(my_rig->caps->mfg_name)=="Icom")
+  if(QString(my_rig->caps->mfg_name)=="Icom")
     {
-        if(!catParams.civAddress.isEmpty())
+      if(!catParams.civAddress.isEmpty())
         {
-            rig_set_conf(my_rig, rig_token_lookup(my_rig, "civaddr"), catParams.civAddress.toLatin1());
+          rig_set_conf(my_rig, rig_token_lookup(my_rig, "civaddr"), catParams.civAddress.toLatin1());
         }
     }
-
-    strncpy(my_rig->state.rigport.pathname,(const char *)catParams.serialPort.toLatin1().data(),FILPATHLEN);
-    strncpy(my_rig->state.pttport.pathname,(const char *)catParams.serialPort.toLatin1().data(),FILPATHLEN);
-    my_rig->state.rigport.parm.serial.rate = catParams.baudrate;
-    my_rig->state.rigport.parm.serial.data_bits=catParams.databits;
-    my_rig->state.rigport.parm.serial.stop_bits=catParams.stopbits;
-    if(catParams.parity=="Even") my_rig->state.rigport.parm.serial.parity= RIG_PARITY_EVEN;
-    else if (catParams.parity=="Odd") my_rig->state.rigport.parm.serial.parity = RIG_PARITY_ODD;
-    else  my_rig->state.rigport.parm.serial.parity = RIG_PARITY_NONE;
-    if(catParams.handshake=="XOn/Xoff") my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_XONXOFF;
-    if(catParams.handshake=="Hardware") my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_HARDWARE;
-    else my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_NONE;
-    my_rig->state.pttport.type.ptt = catParams.pttType;
-
-    addToLog(QString("rigcontrol:init rigport.pathname: %1").arg(my_rig->state.rigport.pathname),LOGRIGCTRL);
-    retcode = rig_open(my_rig);
-    if (retcode != RIG_OK )
-    {
-        addToLog(QString("CAT Error: %1").arg(QString(rigerror(retcode))),LOGALL);
-        initError=QString("CAT Error: %1").arg(QString(rigerror(retcode)));
-        return false;
+  if(!catParams.serialPort.isEmpty())
+     {
+      strncpy(my_rig->state.rigport.pathname,(const char *)catParams.serialPort.toLatin1().data(),FILPATHLEN);
     }
-    addToLog("rigcontroller successfully opened",LOGRIGCTRL);
-    rigControlEnabled=true;
+//  strncpy(my_rig->state.pttport.pathname,(const char *)catParams.serialPort.toLatin1().data(),FILPATHLEN);
+  my_rig->state.rigport.parm.serial.rate = catParams.baudrate;
+  my_rig->state.rigport.parm.serial.data_bits=catParams.databits;
+  my_rig->state.rigport.parm.serial.stop_bits=catParams.stopbits;
+  if(catParams.parity=="Even") my_rig->state.rigport.parm.serial.parity= RIG_PARITY_EVEN;
+  else if (catParams.parity=="Odd") my_rig->state.rigport.parm.serial.parity = RIG_PARITY_ODD;
+  else  my_rig->state.rigport.parm.serial.parity = RIG_PARITY_NONE;
+  if(catParams.handshake=="XOn/Xoff") my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_XONXOFF;
+  if(catParams.handshake=="Hardware") my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_HARDWARE;
+  else my_rig->state.rigport.parm.serial.handshake = RIG_HANDSHAKE_NONE;
+  my_rig->state.pttport.type.ptt = catParams.pttType;
 
-
-
-    // int verbose=0;
-    // rig_set_debug(verbose<2 ? RIG_DEBUG_NONE: (rig_debug_level_e)verbose);
-    // rig_debug(RIG_DEBUG_VERBOSE, "rigctl, %s\n", hamlib_version);
-    // test if we can contact the tranceiver
-
-    canSetFreq=(my_rig->caps->set_freq != NULL);
-    canGetFreq=(my_rig->caps->get_freq != NULL);
-    canSetMode=(my_rig->caps->set_mode != NULL);
-    canGetMode=(my_rig->caps->get_mode != NULL);
-    canSetPTT=(my_rig->caps->set_ptt != NULL);
-    canGetPTT=(my_rig->caps->get_ptt != NULL);
-
-
-    double fr;
-    if(!getFrequency(fr))
+  addToLog(QString("rigcontrol:init rigport.pathname: %1").arg(my_rig->state.rigport.pathname),LOGRIGCTRL);
+  retcode = rig_open(my_rig);
+  if (retcode != RIG_OK )
     {
-        //        rigControlEnabled=false;
+      addToLogDebug(QString("CAT Error: %1").arg(QString(rigerror(retcode))),LOGALL);
+      initError=QString("CAT Error: %1").arg(QString(rigerror(retcode)));
+      return false;
     }
-    return true;
+  addToLog("rigcontroller successfully opened",LOGRIGCTRL);
+  rigControlEnabled=true;
+
+
+
+  // int verbose=0;
+  // rig_set_debug(verbose<2 ? RIG_DEBUG_NONE: (rig_debug_level_e)verbose);
+  // rig_debug(RIG_DEBUG_VERBOSE, "rigctl, %s\n", hamlib_version);
+  // test if we can contact the tranceiver
+
+  canSetFreq=(my_rig->caps->set_freq != NULL);
+  canGetFreq=(my_rig->caps->get_freq != NULL);
+  canSetMode=(my_rig->caps->set_mode != NULL);
+  canGetMode=(my_rig->caps->get_mode != NULL);
+  canSetPTT=(my_rig->caps->set_ptt != NULL);
+  canGetPTT=(my_rig->caps->get_ptt != NULL);
+
+
+  double fr;
+  if(!getFrequency(fr))
+    {
+      //        rigControlEnabled=false;
+    }
+  return true;
 }
 
 bool rigControl::getFrequency(double &frequency)
 {
-    int retcode;
-    if(catParams.enableXMLRPC)
+  int retcode;
+  if(catParams.enableXMLRPC)
     {
-        frequency=xmlIntfPtr->getFrequency();
+      frequency=xmlIntfPtr->getFrequency();
+      return true;
     }
-    else
-    {
-        if(!rigControlEnabled || !canGetFreq) return false;
+
+  if(!rigControlEnabled || !canGetFreq) return false;
+  retcode = rig_get_freq(my_rig, RIG_VFO_CURR, &frequency);
+    for(int i=0;i<RIGCMDTRIES;i++)
+      {
         retcode = rig_get_freq(my_rig, RIG_VFO_CURR, &frequency);
-        if (retcode != RIG_OK )
-            frequency=lastFrequency;
-        //    {errorMessage(retcode,"getFrequency"); return false; }
-    }
-    return true;
+        if (retcode==RIG_OK)
+          {
+            return true;
+          }
+      }
+//  errorMessage(retcode,"getFrequency");
+  frequency=lastFrequency;
+  return false;
+
 }
 
 bool rigControl::setFrequency(double frequency)
 {
-    int retcode;
-    if(catParams.enableXMLRPC)
+  int retcode=-1;
+  if(catParams.enableXMLRPC)
     {
-        xmlIntfPtr->setFrequency(frequency);
+      xmlIntfPtr->setFrequency(frequency);
+      return true;
     }
-    else
+  if(!rigControlEnabled || !canSetFreq) return false;
+  //        retcode = rig_set_vfo(my_rig, RIG_VFO_CURR);
+  //        if (retcode != RIG_OK ) {errorMessage(retcode,"setVFO"); return false; }
+
+  for(int i=0;i<RIGCMDTRIES;i++)
     {
-        if(!rigControlEnabled || !canSetFreq) return false;
-//        retcode = rig_set_vfo(my_rig, RIG_VFO_CURR);
-//        if (retcode != RIG_OK ) {errorMessage(retcode,"setVFO"); return false; }
-        retcode = rig_set_freq(my_rig, RIG_VFO_CURR, frequency);
-        if (retcode != RIG_OK ) {errorMessage(retcode,"setFrequency"); return false; }
+      retcode = rig_set_freq(my_rig, RIG_VFO_CURR, frequency);
+      if (retcode==RIG_OK)
+        {
+          return true;
+        }
     }
-    return true;
+  errorMessage(retcode,"setFrequency");
+  return false;
 }
 
 void rigControl::disable()
 {
-    if(rigControlEnabled)
+  if(rigControlEnabled)
     {
-        rig_close(my_rig); /* close port */
-        rig_cleanup(my_rig);
-        rigControlEnabled=false;
+      rig_close(my_rig); /* close port */
+      rig_cleanup(my_rig);
+      rigControlEnabled=false;
     }
 }
 
 bool rigControl::getMode(QString &mode)
 {
-    if(catParams.enableXMLRPC)
+  if(catParams.enableXMLRPC)
     {
-        mode =xmlIntfPtr->getMode();
+      mode =xmlIntfPtr->getMode();
+      return true;
     }
-    else
+
+  rmode_t rmode;
+  pbwidth_t width;
+  int retcode;
+  if(!rigControlEnabled || !canGetMode) return false;
+
+  for(int i=0;i<RIGCMDTRIES;i++)
     {
-        rmode_t rmode;
-        pbwidth_t width;
-        int retcode;
-        if(!rigControlEnabled || !canGetMode) return false;
-        retcode = rig_get_mode(my_rig, RIG_VFO_CURR, &rmode, &width);
-        if (retcode != RIG_OK ) {errorMessage(retcode,"getMode"); return false; }
-        mode=QString(rig_strrmode(rmode));
+      retcode = rig_get_mode(my_rig, RIG_VFO_CURR, &rmode, &width);
+      if (retcode==RIG_OK)
+        {
+          mode=QString(rig_strrmode(rmode));
+          return true;
+        }
     }
-    return true;
+  errorMessage(retcode,"getMode");
+  return false;
+
+
 }
 
-bool rigControl::setMode(QString mode)
+bool rigControl::setMode(QString mode,QString passBand)
 {
-    QString orgMode;
-    int i;
-    int pos=-1;
-    if(catParams.enableXMLRPC)
+  QString orgMode;
+  int pb;
+  int i;
+  int pos=-1;
+  if(catParams.enableXMLRPC)
     {
-        orgMode=xmlIntfPtr->getMode();
-        for(i=0;i<xmlModes.count();i++)
+      orgMode=xmlIntfPtr->getMode();
+      for(i=0;i<xmlModes.count();i++)
         {
-            pos=orgMode.indexOf(xmlModes.at(i),Qt::CaseInsensitive);
-            if(pos>=0)
+          pos=orgMode.indexOf(xmlModes.at(i),Qt::CaseInsensitive);
+          if(pos>=0)
             {
-                orgMode.replace(xmlModes.at(i),mode);
-                break;
+              orgMode.replace(xmlModes.at(i),mode);
+              break;
             }
         }
-        if(pos>=0) xmlIntfPtr->setMode(orgMode);
+      if(pos>=0) xmlIntfPtr->setMode(orgMode);
+      return true;
     }
-    else
+
+  rmode_t rmode=rig_parse_mode(mode.toLatin1().data());
+  if(passBand=="Narrow")
     {
-        rmode_t rmode=rig_parse_mode(mode.toLatin1().data());
-        int retcode;
-        if(!rigControlEnabled || !canSetMode) return false;
-        retcode = rig_set_mode(my_rig, RIG_VFO_CURR, rmode, rig_passband_normal(my_rig,rmode));
-        if (retcode != RIG_OK ) {errorMessage(retcode,"setMode"); return false; }
+      pb=rig_passband_narrow(my_rig,rmode);
     }
-    return true;
+  else if(passBand=="Wide")
+    {
+      pb=rig_passband_wide(my_rig,rmode);
+    }
+  else
+    {
+      pb=rig_passband_normal(my_rig,rmode);
+    }
+  int retcode;
+  if(!rigControlEnabled || !canSetMode) return false;
+
+  for(int i=0;i<RIGCMDTRIES;i++)
+    {
+      retcode = rig_set_mode(my_rig, RIG_VFO_CURR, rmode, pb);
+      if (retcode==RIG_OK)
+        {
+          mode=QString(rig_strrmode(rmode));
+          return true;
+        }
+    }
+  errorMessage(retcode,"setMode");
+  return false;
 }
 
 
 bool rigControl::setPTT(bool on)
 {
-    int retcode;
-    ptt_t ptt;
-    /* Hamlib will fall back to RIG_PTT_ON if RIG_PTT_ON_DATA is not available in current hamlib configuration */	
-    if(on) ptt=RIG_PTT_ON_DATA; else ptt=RIG_PTT_OFF;
-    if(!rigControlEnabled || !canSetPTT) return false;
-    retcode = rig_set_ptt (my_rig, RIG_VFO_CURR,ptt);
-    if (retcode != RIG_OK ) {errorMessage(retcode,"setPTT"); return false; }
-    return true;
+  int retcode;
+  ptt_t ptt;
+  /* Hamlib will fall back to RIG_PTT_ON if RIG_PTT_ON_DATA is not available in current hamlib configuration */
+  if(on) ptt=RIG_PTT_ON_DATA; else ptt=RIG_PTT_OFF;
+  if(!rigControlEnabled || !canSetPTT) return false;
+
+  for(int i=0;i<RIGCMDTRIES;i++)
+    {
+      retcode = rig_set_ptt (my_rig, RIG_VFO_CURR,ptt);
+      if (retcode==RIG_OK)
+        {
+          return true;
+        }
+    }
+  errorMessage(retcode,"setPTT");
+  return false;
 }
 
 
 
 void  rigControl::errorMessage(int errorCode,QString command)
 {
-    QMessageBox::information(0,"Cat interface",QString("Error in connection: %1\n%2").arg(QString(rigerror(errorCode))).arg(command));
+  displayMBoxEvent *stmb;
+  stmb= new displayMBoxEvent("Cat interface",QString("Error in connection: %1\n%2").arg(QString(rigerror(errorCode))).arg(command));
+  QApplication::postEvent( dispatcherPtr, stmb );
+
+//  QMessageBox::information(0,"Cat interface",QString("Error in connection: %1\n%2").arg(QString(rigerror(errorCode))).arg(command));
 }
 
 void rigControl::getRadioList()
 {
-    if(!radiolistLoaded)
+  if(!radiolistLoaded)
     {
-        capsList.clear();
-        rig_load_all_backends();
-        rig_list_foreach(collect,0);
-        qSort(capsList.begin(),capsList.end(),model_Sort);
-        radiolistLoaded=true;
+      capsList.clear();
+      rig_load_all_backends();
+      rig_list_foreach(collect,0);
+      std::sort(capsList.begin(),capsList.end(),model_Sort);
+      radiolistLoaded=true;
     }
 }
 
 bool rigControl::getRadioList(QComboBox *cb)
 {
-    int i;
-    if(capsList.count()==0) return false;
-    QStringList sl;
-    for (i=0;i<capsList.count();i++)
+  int i;
+  if(capsList.count()==0) return false;
+  QStringList sl;
+  for (i=0;i<capsList.count();i++)
     {
-        QString t;
-        t= QString::number(capsList.at(i)->rig_model);
-        t=t.rightJustified(5,' ')+" ";
-        t+= capsList.at(i)->mfg_name;
-        t+=",";
-        t+=capsList.at(i)->model_name;
-        sl << t;
+      QString t;
+      t= QString::number(capsList.at(i)->rig_model);
+      t=t.rightJustified(5,' ')+" ";
+      t+= capsList.at(i)->mfg_name;
+      t+=",";
+      t+=capsList.at(i)->model_name;
+      sl << t;
     }
-    cb->addItems(sl);
-    return true;
+  cb->addItems(sl);
+  return true;
 }
 
 int rigControl::getModelNumber(int idx)
 {
-    if(idx<0) return 0;
-    return capsList.at(idx)->rig_model;
+  if(idx<0) return 0;
+  return capsList.at(idx)->rig_model;
 }
 
 int rigControl::getRadioModelIndex()
 {
-    int i;
-    QString t=catParams.radioModel;
-    t=t.remove(0,5);
-    t=t.simplified();
-    QStringList sl=t.split(",");
-    if(sl.count()==1) sl.append("");
-    for(i=0;i<capsList.count();i++)
+  int i;
+  QString t=catParams.radioModel;
+  t=t.remove(0,5);
+  t=t.simplified();
+  QStringList sl=t.split(",");
+  if(sl.count()==1) sl.append("");
+  for(i=0;i<capsList.count();i++)
     {
-        if((capsList.at(i)->mfg_name==sl.at(0)) && (capsList.at(i)->model_name==sl.at(1)))
+      if((capsList.at(i)->mfg_name==sl.at(0)) && (capsList.at(i)->model_name==sl.at(1)))
         {
-            return i;
+          return i;
         }
     }
-    return -1;
+  return -1;
 }
 
 bool model_Sort(const rig_caps *caps1,const rig_caps *caps2)
 {
-    if(caps1->mfg_name==caps2->mfg_name)
+  if(caps1->mfg_name==caps2->mfg_name)
     {
-        if (QString::compare(caps1->model_name,caps2->model_name)<0) return true;
-        return false;
+      if (QString::compare(caps1->model_name,caps2->model_name)<0) return true;
+      return false;
     }
-    if (QString::compare(caps1->mfg_name,caps2->mfg_name)<0) return true;
-    return false;
+  if (QString::compare(caps1->mfg_name,caps2->mfg_name)<0) return true;
+  return false;
 }
 
 void rigControl::activatePTT(bool b)
 {
-    int modemlines;
-    if(catParams.enableSerialPTT)
+  int modemlines;
+  if(catParams.enableSerialPTT)
     {
-        if (catParams.pttSerialPort.isEmpty()) return;
-        if(serialP==0)
+      if (catParams.pttSerialPort.isEmpty()) return;
+      if(serialP==0)
         {
-            serialP=::open(catParams.pttSerialPort.toLatin1().data(),O_RDWR);
-            if (serialP<=0)
+          serialP=::open(catParams.pttSerialPort.toLatin1().data(),O_RDWR);
+          if (serialP<=0)
             {
-                QMessageBox::warning(txWidgetPtr,"Serial Port Error",
-                                     QString("Unable to open serial port %1\ncheck Options->Configuration\n"
-                                             "make sure that you have read/write permission\nIf you do not have a serial port,\n"
-                                             "then disable -Serial PTT- option in the configuration").arg(catParams.pttSerialPort) ,
-                                     QMessageBox::Ok,0 );
-                return;
+              QMessageBox::warning(txWidgetPtr,"Serial Port Error",
+                                   QString("Unable to open serial port %1\ncheck Options->Configuration\n"
+                                           "make sure that you have read/write permission\nIf you do not have a serial port,\n"
+                                           "then disable -Serial PTT- option in the configuration").arg(catParams.pttSerialPort) ,
+                                   QMessageBox::Ok,0 );
+              return;
             }
-            else
+          else
             {
-                ioctl(serialP,TIOCMGET,&modemlines);
-                if(catParams.activeDTR) modemlines &= ~TIOCM_DTR;
-                if(catParams.activeRTS)modemlines &= ~TIOCM_RTS;
-                if(catParams.nactiveDTR) modemlines |= ~TIOCM_DTR;
-                if(catParams.nactiveRTS)modemlines |= ~TIOCM_RTS;
-                ioctl(serialP,TIOCMSET,&modemlines);
+              ioctl(serialP,TIOCMGET,&modemlines);
+              if(catParams.activeDTR) modemlines &= ~TIOCM_DTR;
+              if(catParams.activeRTS)modemlines &= ~TIOCM_RTS;
+              if(catParams.nactiveDTR) modemlines |= ~TIOCM_DTR;
+              if(catParams.nactiveRTS)modemlines |= ~TIOCM_RTS;
+              ioctl(serialP,TIOCMSET,&modemlines);
             }
         }
-        if(serialP>0)
+      if(serialP>0)
         {
-            if(b)
+          if(b)
             {
-                ioctl(serialP,TIOCMGET,&modemlines);
-                if(catParams.activeDTR) modemlines |= TIOCM_DTR;
-                if(catParams.activeRTS)modemlines |= TIOCM_RTS;
-                if(catParams.nactiveDTR) modemlines &= ~TIOCM_DTR;
-                if(catParams.nactiveRTS)modemlines &= ~TIOCM_RTS;
-                ioctl(serialP,TIOCMSET,&modemlines);
-                //ioctl(serial,TIOCMBIS,&t);
+              ioctl(serialP,TIOCMGET,&modemlines);
+              if(catParams.activeDTR) modemlines |= TIOCM_DTR;
+              if(catParams.activeRTS)modemlines |= TIOCM_RTS;
+              if(catParams.nactiveDTR) modemlines &= ~TIOCM_DTR;
+              if(catParams.nactiveRTS)modemlines &= ~TIOCM_RTS;
+              ioctl(serialP,TIOCMSET,&modemlines);
+              //ioctl(serial,TIOCMBIS,&t);
             }
-            else
+          else
             {
-                ioctl(serialP,TIOCMGET,&modemlines);
-                if(catParams.activeDTR) modemlines &= ~TIOCM_DTR;
-                if(catParams.activeRTS) modemlines &= ~TIOCM_RTS;
-                if(catParams.nactiveDTR) modemlines |= ~TIOCM_DTR;
-                if(catParams.nactiveRTS)modemlines |= ~TIOCM_RTS;
-                ioctl(serialP,TIOCMSET,&modemlines);
-                //	ioctl(serial,TIOCMBIC,&t);
+              ioctl(serialP,TIOCMGET,&modemlines);
+              if(catParams.activeDTR) modemlines &= ~TIOCM_DTR;
+              if(catParams.activeRTS) modemlines &= ~TIOCM_RTS;
+              if(catParams.nactiveDTR) modemlines |= ~TIOCM_DTR;
+              if(catParams.nactiveRTS)modemlines |= ~TIOCM_RTS;
+              ioctl(serialP,TIOCMSET,&modemlines);
+              //	ioctl(serial,TIOCMBIC,&t);
 
             }
         }
     }
-    else if(catParams.enableXMLRPC)
+  else if(catParams.enableXMLRPC)
     {
-        xmlIntfPtr->activatePTT(b);
+      xmlIntfPtr->activatePTT(b);
     }
-    else rigControllerPtr->setPTT(b); // does nothing if rigController is disabled
-    mainWindowPtr->setPTT(b);
-    if(b)
+  else rigControllerPtr->setPTT(b); // does nothing if rigController is disabled
+  mainWindowPtr->setPTT(b);
+  if(b)
     {
-        addToLog("dispatcher: PTT activated",LOGDISPATCH);
+      addToLog("dispatcher: PTT activated",LOGDISPATCH);
     }
-    else
+  else
     {
-        addToLog("dispatcher: PTT deactivated",LOGDISPATCH);
+      addToLog("dispatcher: PTT deactivated",LOGDISPATCH);
     }
 }
 
 
 int  rigControl::rawCommand(QByteArray ba)
 {
-    int i;
-    bool result;
-    char rxBuffer[100];
+  int i;
+  bool result;
+  char rxBuffer[100];
 
-    QString command="w ";
-    QByteArray cmdBa;
-    if(!rigControlEnabled) return 0;
-    struct rig_state *rs;
-    rs = &my_rig->state;
-    // check if backend via rigctld
-    if(catParams.radioModelNumber==2)
+  QString command="w ";
+  QByteArray cmdBa;
+  if(!rigControlEnabled) return 0;
+  struct rig_state *rs;
+  rs = &my_rig->state;
+  // check if backend via rigctld
+  if(catParams.radioModelNumber==2)
     {
-        // we need to send this as a command string
-        if(additionalCommandHex)
+      // we need to send this as a command string
+      if(additionalCommandHex)
         {
-            for(i=0;i<ba.count();i++)
+          for(i=0;i<ba.count();i++)
             {
 
-                command+="\\0x";
-                command+=QString::number((unsigned char)ba.at(i),16);
+              command+="\\0x";
+              command+=QString::number((unsigned char)ba.at(i),16);
             }
         }
-        else
+      else
         {
           command+=ba;
         }
 
-        command+="\n";
-        cmdBa=command.toLatin1();
-        result=write_block(&rs->rigport,cmdBa.constData(), cmdBa.count());
+      command+="\n";
+      cmdBa=command.toLatin1();
+      result=write_block(&rs->rigport,cmdBa.constData(), cmdBa.count());
 
     }
-    else
+  else
     {
-         result=write_block(&rs->rigport,ba.constData(), ba.count());
+      result=write_block(&rs->rigport,ba.constData(), ba.count());
     }
-    read_block(&rs->rigport,rxBuffer,99);
-    return result;
+  read_block(&rs->rigport,rxBuffer,99);
+  return result;
 
 }

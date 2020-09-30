@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -24,7 +24,6 @@
 #include <QDateTime>
 #include <QDebug>
 #include <stdarg.h>
-#include "appglobal.h"
 #include "dirdialog.h"
 
 
@@ -108,6 +107,12 @@ void getValue(QString &s, QComboBox *input)
 	s=input->currentText();
 }
 
+void getValue(bool &val, QPushButton *input)
+{
+  val=input->isChecked();
+}
+
+
 void getValue(int &s, QButtonGroup *input)
 {
 	s=input->checkedId();
@@ -119,6 +124,11 @@ void getValue(bool &s, QRadioButton *input)
 }
 
 void getValue(int &val, QSlider *input)
+{
+  val=input->value();
+}
+
+void getValue(uint &val, QSlider *input)
 {
   val=input->value();
 }
@@ -207,6 +217,11 @@ void setValue(QString s, QComboBox *input)
 	input->setCurrentIndex(0);
 }
 
+void setValue(bool s, QPushButton *input)
+{
+  input->setChecked(s);
+}
+
 void setValue(int s, QButtonGroup *input)
 {
 	input->button(s)->setChecked(true);
@@ -227,7 +242,7 @@ bool browseGetFile(QLineEdit *le,QString deflt, const QString &filter)
 {
     dirDialog d((QWidget *)le,"Browse");
     QString s=d.openFileName(deflt,filter);
-	if (s==QString::null) return false;
+  if (s.isNull()) return false;
 	if (s.isEmpty()) return false;
 	le->setText(s);
 	return true;
@@ -237,7 +252,7 @@ bool browseSaveFile(QLineEdit *le,QString deflt,const QString &filter)
 {
     dirDialog d((QWidget *)le,"Browse");
 	QString s=d.saveFileName(deflt,filter,"");
-	if (s==QString::null) return false;
+  if (s.isNull()) return false;
 	if (s.isEmpty()) return false;
 	le->setText(s);
 	return true;
@@ -247,7 +262,7 @@ bool browseDir(QLineEdit *le,QString deflt)
 {
     dirDialog d((QWidget *)le,"Browse");
     QString s=d.openDirName(deflt);
-	if (s==QString::null) return false;
+  if (s.isNull()) return false;
 	if (s.isEmpty()) return false;
 	le->setText(s);
 	return true;

@@ -36,6 +36,7 @@ const QString visStateStr[visDecoder::GETCODE+1]=
 fskDecoder::fskDecoder()
 {
   sampleCounter=0;
+  syncSampleCounter=0;
 }
 
 
@@ -137,7 +138,6 @@ void fskDecoder::init()
   checksum=0;
   sampleCounter=0;
   timeoutCounter=0;
-
 }
 
 
@@ -217,7 +217,12 @@ QString fskIdDecoder::getFSKId()
 void fskIdDecoder::switchState(efskState newState,unsigned int i)
 {
   Q_UNUSED(i);
-  addToLog(QString("%1 to %2 at samplecounter:%3 syncSamplCntr%4").arg(fskStateStr[fskState]).arg(fskStateStr[newState]).arg(sampleCounter+i).arg(syncSampleCounter+i),LOGFSKID);
+  addToLog(QString("%1 to %2 at samplecounter:%3 total: %4")
+           .arg(fskStateStr[fskState])
+           .arg(fskStateStr[newState])
+           .arg(sampleCounter+i)
+           .arg(syncSampleCounter+i)
+           ,LOGFSKID);
   fskState=newState;
 }
 
@@ -240,7 +245,7 @@ void fskIdDecoder::extract(unsigned int syncSampleCtr, bool narrow)
           timeoutCounter=0;
           break;
         case WAITSTART1500:
-          if(waitStartFreq(500,1800))
+          if(waitStartFreq(1400,1600))
             {
               switchState(WAITEND1500,i);
               startSampleCounter=sampleCounter+i;
@@ -248,11 +253,9 @@ void fskIdDecoder::extract(unsigned int syncSampleCtr, bool narrow)
           break;
         case WAITEND1500:
           {
-            if(waitEndFreq(1600,1800))
+            if(waitEndFreq(1400,1600))
               {
-//                qDebug() << sampleCounter+i-startSampleCounter;
                 if(((sampleCounter+i-startSampleCounter)>=FSKMIN1500))
-//                        && ((sampleCounter+i-startSampleCounter)<2*FSKMIN1500))
                   {
                     switchState(WAITSTART2100,i);
                     timeoutCounter=0;
@@ -377,7 +380,7 @@ uint visDecoder::getCode()
 void visDecoder::switchState(evisState newState,unsigned int i)
 {
   Q_UNUSED(i);
-  addToLog(QString("%1 to %2 at samplecounter:%3 samplecounter%4").arg(visStateStr[visState]).arg(visStateStr[newState]).arg(sampleCounter+i).arg(sampleCounter+i),LOGVISCODE);
+//  addToLog(QString("%1 to %2 at samplecounter:%3 samplecounter%4").arg(visStateStr[visState]).arg(visStateStr[newState]).arg(sampleCounter+i).arg(sampleCounter+i),LOGVISCODE);
   visState=newState;
 }
 
@@ -592,7 +595,7 @@ void visDecoder::extractWide()
                 {
                   //end of VIS detected
                   validCode=true;
-                  addToLog(QString("end bits at %1").arg(syncSampleCounter+i),LOGVISCODE);
+                  addToLog(QString("end bits at %1").arg(syncSampleCounter+i-VISBITWIDE/2),LOGVISCODE);
                   if (bitCounter<=11)
                   {
                     symbol&=0xFF;
@@ -604,6 +607,7 @@ void visDecoder::extractWide()
                   // check for validity
                   if((mode=lookupVIS(symbol))!=NOTVALID)
                     {
+//                      emit visCodeWideDetected((int)mode,syncSampleCounter+i-VISBITWIDE/2);
                       emit visCodeWideDetected((int)mode,syncSampleCounter+i);
                     }
 

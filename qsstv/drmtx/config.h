@@ -1,44 +1,17 @@
 /* config.h.  Generated from config.h.in by configure.  */
 /* config.h.in.  Generated from configure.in by autoheader.  */
 
-/* Define to 1 if you have the <dlfcn.h> header file. */
-#define HAVE_DLFCN_H 1
-
-/* Define to 1 if you have the <fftw3.h> header file. */
-#define HAVE_FFTW3_H 1
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #define HAVE_INTTYPES_H 1
 
-/* Define to 1 if you have the `faac' library (-lfaac). */
-/* #undef HAVE_LIBFAAC */
 
-/* Define to 1 if you have the `faad' library (-lfaad). */
-/* #undef HAVE_LIBFAAD */
-
-/* Define if you have Hamlib */
-/* #undef HAVE_LIBHAMLIB */
-
-/* Define to 1 if you have the `pcap' library (-lpcap). */
-/* #undef HAVE_LIBPCAP */
-
-/* Define to 1 if you have the `qwt' library (-lqwt). */
-/* #undef HAVE_LIBQWT */
-
-/* Define to 1 if you have the `rt' library (-lrt). */
-#define HAVE_LIBRT 1
 
 /* Define if you have libsndfile */
 /* #undef HAVE_LIBSNDFILE */
 
 /* Define to 1 if you have the `z' library (-lz). */
 #define HAVE_LIBZ 0
-
-/* Define to 1 if you have the <memory.h> header file. */
-#define HAVE_MEMORY_H 1
-
-/* Define if you have Hamlib >= 1.2.1 */
-/* #undef HAVE_RIG_PARSE_MODE */
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #define HAVE_STDINT_H 1

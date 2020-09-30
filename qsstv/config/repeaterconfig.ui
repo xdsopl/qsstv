@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>624</width>
-    <height>474</height>
+    <width>721</width>
+    <height>554</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,9 +15,9 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
-    <layout class="QHBoxLayout" name="_2">
+    <layout class="QHBoxLayout" name="horizontalLayout">
      <item>
-      <widget class="QCheckBox" name="repeaterEnableCheckBox">
+      <widget class="QCheckBox" name="repeaterEnabledCheckBox">
        <property name="text">
         <string>Enable Repeater</string>
        </property>
@@ -69,7 +69,10 @@
        <item>
         <widget class="QSpinBox" name="imageIntervalSpinBox">
          <property name="minimum">
-          <number>5</number>
+          <number>1</number>
+         </property>
+         <property name="maximum">
+          <number>1440</number>
          </property>
         </widget>
        </item>
@@ -91,24 +94,13 @@
        </property>
       </spacer>
      </item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="horizontalLayout_2">
      <item>
-      <layout class="QHBoxLayout" name="_4">
-       <property name="spacing">
-        <number>6</number>
-       </property>
-       <property name="leftMargin">
-        <number>0</number>
-       </property>
-       <property name="topMargin">
-        <number>0</number>
-       </property>
-       <property name="rightMargin">
-        <number>0</number>
-       </property>
-       <property name="bottomMargin">
-        <number>0</number>
-       </property>
-       <item>
+      <layout class="QGridLayout" name="gridLayout">
+       <item row="0" column="0">
         <widget class="QLabel" name="repeaterTxModeLabel">
          <property name="text">
           <string>Repeater TX mode</string>
@@ -118,31 +110,72 @@
          </property>
         </widget>
        </item>
-       <item>
+       <item row="0" column="1" rowspan="2">
         <widget class="QComboBox" name="repeaterTxModeComboBox"/>
        </item>
+       <item row="0" column="2">
+        <widget class="QLabel" name="label">
+         <property name="text">
+          <string>Tx Delay (sec)</string>
+         </property>
+        </widget>
+       </item>
+       <item row="0" column="3">
+        <widget class="QSpinBox" name="txDelaySpinBox"/>
+       </item>
+       <item row="1" column="3" rowspan="2">
+        <widget class="QSpinBox" name="txDRMImageSizeSpinBox">
+         <property name="minimum">
+          <number>4</number>
+         </property>
+         <property name="maximum">
+          <number>100</number>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="0">
+        <widget class="QLabel" name="repeaterTxModeLabel_2">
+         <property name="text">
+          <string>Idle Image TX mode</string>
+         </property>
+         <property name="wordWrap">
+          <bool>false</bool>
+         </property>
+        </widget>
+       </item>
+       <item row="2" column="1">
+        <widget class="QComboBox" name="repeaterIdleTxModeComboBox"/>
+       </item>
+       <item row="2" column="2">
+        <widget class="QLabel" name="trxDRMImageSizeLabel">
+         <property name="text">
+          <string>DRM Image Size (kB)</string>
+         </property>
+        </widget>
+       </item>
       </layout>
+     </item>
+     <item>
+      <spacer name="spacer_2">
+       <property name="orientation">
+        <enum>Qt::Horizontal</enum>
+       </property>
+       <property name="sizeType">
+        <enum>QSizePolicy::Expanding</enum>
+       </property>
+       <property name="sizeHint" stdset="0">
+        <size>
+         <width>60</width>
+         <height>20</height>
+        </size>
+       </property>
+      </spacer>
      </item>
     </layout>
    </item>
    <item>
-    <layout class="QHBoxLayout" name="_6">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
+    <layout class="QGridLayout" name="gridLayout_2">
+     <item row="0" column="0">
       <widget class="QLabel" name="rep1Label">
        <property name="text">
         <string>Idle Image 1</string>
@@ -152,14 +185,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="1">
       <widget class="QLineEdit" name="repeaterImage1LineEdit">
        <property name="modified">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="0" column="2">
       <widget class="QPushButton" name="rp1BrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -172,26 +205,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="_5">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
+     <item row="1" column="0">
       <widget class="QLabel" name="rp2Label">
        <property name="text">
         <string>Idle Image 2</string>
@@ -201,14 +215,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="1" column="1">
       <widget class="QLineEdit" name="repeaterImage2LineEdit">
        <property name="modified">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="1" column="2">
       <widget class="QPushButton" name="rp2BrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -221,26 +235,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="_7">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
+     <item row="2" column="0">
       <widget class="QLabel" name="rp3Label">
        <property name="text">
         <string>Idle Image 3</string>
@@ -250,14 +245,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="2" column="1">
       <widget class="QLineEdit" name="repeaterImage3LineEdit">
        <property name="modified">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="2" column="2">
       <widget class="QPushButton" name="rp3BrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -270,26 +265,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout">
-     <property name="spacing">
-      <number>6</number>
-     </property>
-     <property name="leftMargin">
-      <number>0</number>
-     </property>
-     <property name="topMargin">
-      <number>0</number>
-     </property>
-     <property name="rightMargin">
-      <number>0</number>
-     </property>
-     <property name="bottomMargin">
-      <number>0</number>
-     </property>
-     <item>
+     <item row="3" column="0">
       <widget class="QLabel" name="rp4Label">
        <property name="text">
         <string>Idle Image 4</string>
@@ -299,14 +275,14 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="3" column="1">
       <widget class="QLineEdit" name="repeaterImage4LineEdit">
        <property name="modified">
         <bool>false</bool>
        </property>
       </widget>
      </item>
-     <item>
+     <item row="3" column="2">
       <widget class="QPushButton" name="rp4BrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -319,11 +295,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_6">
-     <item>
+     <item row="4" column="0">
       <widget class="QLabel" name="Label">
        <property name="text">
         <string>Idle Template</string>
@@ -333,11 +305,11 @@
        </property>
       </widget>
      </item>
-     <item>
-      <widget class="QLineEdit" name="idleTemplateLineEdit"/>
+     <item row="4" column="1">
+      <widget class="QLineEdit" name="repeaterIdleTemplateLineEdit"/>
      </item>
-     <item>
-      <widget class="QPushButton" name="idleTemplateBrowseButton">
+     <item row="4" column="2">
+      <widget class="QPushButton" name="repeaterIdleTemplateBrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
          <horstretch>0</horstretch>
@@ -349,11 +321,7 @@
        </property>
       </widget>
      </item>
-    </layout>
-   </item>
-   <item>
-    <layout class="QHBoxLayout" name="horizontalLayout_7">
-     <item>
+     <item row="5" column="0">
       <widget class="QLabel" name="ackLabel">
        <property name="text">
         <string>Repeater Template</string>
@@ -363,10 +331,10 @@
        </property>
       </widget>
      </item>
-     <item>
+     <item row="5" column="1">
       <widget class="QLineEdit" name="repeaterTemplateLineEdit"/>
      </item>
-     <item>
+     <item row="5" column="2">
       <widget class="QPushButton" name="repeaterTemplateBrowseButton">
        <property name="sizePolicy">
         <sizepolicy hsizetype="Fixed" vsizetype="Fixed">

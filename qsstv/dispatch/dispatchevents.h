@@ -1,31 +1,13 @@
-/***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
- *   on4qz@telenet.be                                                      *
- *   http://users.telenet.be/on4qz                                         *
- *                                                                         *
- *   This program is free software; you can redistribute it and/or modify  *
- *   it under the terms of the GNU General Public License as published by  *
- *   the Free Software Foundation; either version 2 of the License, or     *
- *   (at your option) any later version.                                   *
- *                                                                         *
- *   This program is distributed in the hope that it will be useful,       *
- *   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
- *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
- *   GNU General Public License for more details.                          *
- *                                                                         *
- *   You should have received a copy of the GNU General Public License     *
- *   along with this program; if not, write to the                         *
- *   Free Software Foundation, Inc.,                                       *
- *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
- ***************************************************************************/
 #ifndef DISPATCHEVENT_H
 #define DISPATCHEVENT_H
 #include <QEvent>
-#include "widgets/imageviewer.h"
+#include "imageviewer.h"
 #include "appdefs.h"
+#include "hybridcrypt.h"
 #include <unistd.h>
+#include "sstvparam.h"
 
-class ftpInterface;
+class ftpThread;
 
 
 /** dispatch events are used to communicate with the different threads */
@@ -46,14 +28,9 @@ enum dispatchEventType
   endImageTX,
   stoppingTX,
   progressTX,
-  //  verticalRetrace,
-  //  syncLost,
   outOfSync,
-//  statusMsg,  	//!<  display status message
   rxSSTVStatus,     //! shows message in sstv tab
   rxDRMStatus,     //! shows message in drm tab
-  rxDRMNotify,	//! shows text in rx notifications box
-  rxDRMNotifyAppend,
   txDRMNotify,  //! shows text in tx notifications box
   txDRMNotifyAppend,
   txPrepareComplete, //!< tx preparations (uploading etc) complete
@@ -62,8 +39,8 @@ enum dispatchEventType
   templatesChanged,
   editorFinished,
   changeRXFilter,
-  startAutoRepeater,
-  startRepeater,
+//  startAutoRepeater,
+//  startRepeater,
   stopRxTx,
   loadRXImage,
   saveDRMImage,
@@ -72,7 +49,7 @@ enum dispatchEventType
   displayMBox,
   displayProgressFTP,
   moveToTx,
-  notifyAction,
+//  notifyAction,
   ftpSetup,
   notifyCheck,
   ftpUploadFile,
@@ -143,7 +120,7 @@ public:
 
 private:
   uint sync;
-  DSPFLOAT vol;
+//  DSPFLOAT vol;
 };
 
 class displayDRMStatEvent  : public baseEvent
@@ -161,38 +138,25 @@ private:
   DSPFLOAT snr;
 };
 
-//class statusMsgEvent : public baseEvent
-//{
-//public:
-//  /** create event */
-//  statusMsgEvent(QString t):baseEvent( (QEvent::Type)statusMsg ), str(t)
-//  {
-//    description="statusMsgEvent";
-//  }
-//  /** returns info string from the event */
-//  QString getStr() const { return str; }
-//private:
-//  QString str;
-//};
 
 class ftpSetupEvent : public baseEvent
 {
 public:
   /** create event */
-  ftpSetupEvent(ftpInterface * ftpIntf,QString h,int p,QString u,QString pwd,QString d)
+  ftpSetupEvent(ftpThread * ftpIntf,QString h,int p,QString u,QString pwd,QString d)
     :baseEvent( (QEvent::Type)ftpSetup ),ftpIntfPtr(ftpIntf), host(h),port(p),user(u),password(pwd),dir(d)
   {
     description="ftpSetupEvent";
   }
   /** returns settings from the event */
-  ftpInterface *getFtpIntfPtr() const { return ftpIntfPtr; }
+  ftpThread *getFtpIntfPtr() const { return ftpIntfPtr; }
   QString getHost() const { return host; }
   int getPort() const { return port; }
   QString getUser() const { return user; }
   QString getPassword() const { return password; }
   QString getDir() const { return dir; }
 private:
-  ftpInterface *ftpIntfPtr;
+  ftpThread *ftpIntfPtr;
   QString host;
   int port;
   QString user;
@@ -204,18 +168,18 @@ class ftpUploadFileEvent : public baseEvent
 {
 public:
   /** create event */
-  ftpUploadFileEvent(ftpInterface * ftpIntf,QString srcFn,QString dstFn,bool recon)
+  ftpUploadFileEvent(ftpThread * ftpIntf,QString srcFn,QString dstFn,bool recon)
     :baseEvent( (QEvent::Type)ftpUploadFile ),ftpIntfPtr(ftpIntf),sourceFilename(srcFn), destFilename(dstFn),reconnect(recon)
   {
     description="ftpUploadFileEvent";
   }
   /** returns settings from the event */
-  ftpInterface *getFtpIntfPtr() const { return ftpIntfPtr; }
+  ftpThread *getFtpIntfPtr() const { return ftpIntfPtr; }
   QString getSrcFn() const { return sourceFilename; }
   QString getDstFn() const { return destFilename; }
   bool   getReconnect() const { return reconnect; }
 private:
-  ftpInterface *ftpIntfPtr;
+  ftpThread *ftpIntfPtr;
   QString sourceFilename;
   QString destFilename;
   bool reconnect;
@@ -223,47 +187,39 @@ private:
 
 
 
-class notifyActionEvent : public baseEvent
-{
-public:
-  /** create event */
-  notifyActionEvent(QString toRem,QString message,QString fn)
-    :baseEvent( (QEvent::Type)notifyAction ), toRemove(toRem),msg(message),filename(fn)
-  {
-    description="notifyActionEvent";
-  }
-  /** returns settings from the event */
-  QString getToRemove() const { return toRemove; }
-  QString getMsg() const { return msg; }
-  QString getFilename() const { return filename; }
-private:
-  QString toRemove;
-  QString msg;
-  QString filename;
-};
+//class notifyActionEvent : public baseEvent
+//{
+//public:
+//  /** create event */
+//  notifyActionEvent(hybridCrypt thc,QString toRem,QString message,QString fn)
+//    :baseEvent( (QEvent::Type)notifyAction ),hc(thc), toRemove(toRem),msg(message),filename(fn)
+//  {
+//    description="notifyActionEvent";
+//  }
+//  /** returns settings from the event */
+//  hybridCrypt getHybridCrypt() const { return hc; }
+//  QString getToRemove() const { return toRemove; }
+//  QString getMsg() const { return msg; }
+//  QString getFilename() const { return filename; }
+//private:
+//  hybridCrypt hc;
+//  QString toRemove;
+//  QString msg;
+//  QString filename;
+//};
 
 
 class notifyCheckEvent : public baseEvent
 {
 public:
   /** create event */
-  notifyCheckEvent(ftpInterface * ftpIntf,QString fn,int intv, int rp, bool rm)
-    :baseEvent( (QEvent::Type)notifyCheck),ftpIntfPtr(ftpIntf), filename(fn),interval(intv),repeats(rp),remove(rm)
+  notifyCheckEvent(QString fn):baseEvent( (QEvent::Type)notifyCheck),filename(fn)
   {
     description="notifyCheckEvent";
   }
-  /** returns settings from the event */
-  ftpInterface *getFtpIntfPtr() const { return ftpIntfPtr; }
   QString getFilename() const { return filename; }
-  int getInterval() const { return interval; }
-  int getRepeats() const { return repeats; }
-  bool getToRemove() const { return remove; }
 private:
-  ftpInterface *ftpIntfPtr;
   QString filename;
-  int interval;
-  int repeats;
-  bool remove;
 };
 
 
@@ -296,33 +252,7 @@ private:
   QString str;
 };
 
-class rxDRMNotifyEvent : public baseEvent
-{
-public:
-  /** create event */
-  rxDRMNotifyEvent(QString t):baseEvent( (QEvent::Type)rxDRMNotify ), str(t)
-  {
-    description="rxDRMNotifyEvent";
-  }
-  /** returns info string from the event */
-  QString getStr() const { return str; }
-private:
-  QString str;
-};
 
-class rxDRMNotifyAppendEvent : public baseEvent
-{
-public:
-  /** create event */
-  rxDRMNotifyAppendEvent(QString t):baseEvent( (QEvent::Type)rxDRMNotifyAppend ), str(t)
-  {
-    description="rxDRMNotifyAppendEvent";
-  }
-  /** returns info string from the event */
-  QString getStr() const { return str; }
-private:
-  QString str;
-};
 
 class txDRMNotifyEvent : public baseEvent
 {
@@ -403,25 +333,25 @@ public:
   }
 };
 
-class startAutoRepeaterEvent: public baseEvent
-{
-public:
-  /** create event */
-  startAutoRepeaterEvent():baseEvent( (QEvent::Type)startAutoRepeater )
-  {
-    description="startAutoRepeaterEvent";
-  }
-};
+//class startAutoRepeaterEvent: public baseEvent
+//{
+//public:
+//  /** create event */
+//  startAutoRepeaterEvent():baseEvent( (QEvent::Type)startAutoRepeater )
+//  {
+//    description="startAutoRepeaterEvent";
+//  }
+//};
 
-class startRepeaterEvent: public baseEvent
-{
-public:
-  /** create event */
-  startRepeaterEvent():baseEvent( (QEvent::Type)startRepeater )
-  {
-    description="startRepeaterEvent";
-  }
-};
+//class startRepeaterEvent: public baseEvent
+//{
+//public:
+//  /** create event */
+//  startRepeaterEvent():baseEvent( (QEvent::Type)startRepeater )
+//  {
+//    description="startRepeaterEvent";
+//  }
+//};
 
 
 class createModeEvent : public baseEvent
@@ -500,13 +430,13 @@ class endImageSSTVRXEvent : public baseEvent
 {
 public:
   /** create event */
-  endImageSSTVRXEvent(QString mn):baseEvent( (QEvent::Type)endSSTVImageRX ),modeName(mn)
+  endImageSSTVRXEvent(esstvMode md):baseEvent( (QEvent::Type)endSSTVImageRX ),mode(md)
   {
     description="endImageSSTVRXEvent";
   }
-  QString getModeName() {return modeName;}
+  esstvMode getMode() {return mode;}
 private:
-  QString modeName;
+  esstvMode mode;
 };
 
 class endImageTXEvent : public baseEvent
@@ -530,25 +460,6 @@ public:
   }
 };
 
-//class verticalRetraceEvent : public baseEvent
-//{
-//public:
-//  /** create event */
-//  verticalRetraceEvent():baseEvent( (QEvent::Type) verticalRetrace )
-//  {
-//    description="verticalRetraceEvent";
-//  }
-//};
-
-//class syncLostEvent : public baseEvent
-//{
-//public:
-//  /** create event */
-//  syncLostEvent():baseEvent( (QEvent::Type) syncLost )
-//  {
-//    description="syncLostEvent";
-//  }
-//};
 
 
 

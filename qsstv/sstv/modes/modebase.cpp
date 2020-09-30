@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -21,11 +21,12 @@
 #include "modebase.h"
 #include "appglobal.h"
 #include "configparams.h"
-#include "dispatch/dispatcher.h"
-#include "dsp/synthes.h"
+#include "dispatcher.h"
+#include "synthes.h"
 #include "rxwidget.h"
 #include "txwidget.h"
 #include <QApplication>
+#include "logging.h"
 
 const QString stateStr[modeBase::MBTXGAPROBOT+1]=
 {
@@ -110,7 +111,7 @@ void modeBase::deleteBuffers()
   \brief initialize the selected mode
 
   This function initializes all buffers and mode parameters. The localClock will be set to rxClk if rxClk is not zero in receive mode, else the rxClock of the configuration will be used. The localClock is always equal to the txClock from the configuration while in transmit mode;
-  \param[in] rxClk adjusted receive clock
+  \param[in] clk adjusted receive clock
 */
 
 void modeBase::init(DSPFLOAT clk)
@@ -175,6 +176,7 @@ void modeBase::redrawFast(bool r)
 
 modeBase::eModeBase modeBase::process(quint16 *demod,unsigned int syncPos,bool goToSync,unsigned int rxPos)
 {
+  Q_UNUSED (rxPos);
   unsigned int i=0;
   if(goToSync)
     {
@@ -245,43 +247,52 @@ modeBase::eModeBase modeBase::process(quint16 *demod,unsigned int syncPos,bool g
           break;
         case MB1500:
           {
-            // check ODD/EVEN Line for Robot 24/72
+            // check ODD/EVEN Line for Robot 12/36
             if(sampleCounter>=marker)
               {
-                avgFreqGap/=avgFreqGapCounter;
+                logFilePtr->addToAux(QString("m15avg\t%1\t%2\t%3").arg(avgFreqGap).arg(avgFreqGapCounter-AVGFRQOFFSET).arg(avgFreqGap/(avgFreqGapCounter-AVGFRQOFFSET)));
+                avgFreqGap/=(avgFreqGapCounter-AVGFRQOFFSET);
                 addToLog(QString("GapCounter1 %1 at %2").arg(avgFreqGap).arg(sampleCounter),LOGMODES);
-                if(avgFreqGap > 1900)
+                if(avgFreqGap > 2100)
                   {
-                    qDebug() << "switching to 2300"<< QString("GapCounter2 %1 at %2").arg(avgFreqGap).arg(i+ rxPos);
-                    subLine=10;
+//                    subLine=10;
+                    avgOddEvenFreq=avgFreqGap;
+                    logFilePtr->addToAux(QString("m15 eval: %1").arg(avgOddEvenFreq));
                   }
                 switchState(MBSETUPLINE);
               }
             else
               {
-                avgFreqGap+=demod[i];
+                if(avgFreqGapCounter>=AVGFRQOFFSET) avgFreqGap+=demod[i];
                 avgFreqGapCounter++;
+                logFilePtr->addToAux(QString("m15\t%1\t%2\t%3").arg(demod[i]).arg(avgFreqGapCounter).arg(avgFreqGap));
               }
           }
           break;
         case MB2300:
           {
-            // check ODD/EVEN Line for Robot 24/72
+            // check ODD/EVEN Line for Robot 12/36
             if(sampleCounter>=marker)
               {
-                avgFreqGap/=avgFreqGapCounter;
+                logFilePtr->addToAux(QString("m23avg\t%1\t%2\t%3").arg(avgFreqGap).arg(avgFreqGapCounter-AVGFRQOFFSET).arg(avgFreqGap/(avgFreqGapCounter-AVGFRQOFFSET)));
+                avgFreqGap/=(avgFreqGapCounter-AVGFRQOFFSET);
                 addToLog(QString("GapCounter2 %1 at %2").arg(avgFreqGap).arg(sampleCounter),LOGMODES);
-                if(avgFreqGap < 1900)
+                if(avgFreqGap < 1700)
                   {
-                    qDebug() << "switching to 1500" << QString("GapCounter2 %1 at %2").arg(avgFreqGap).arg(i+ rxPos);
-                    subLine=3;
+                    addToLog(QString("Switching to 1500 GapCounter2 %1 at %2").arg(avgFreqGap).arg(i+ rxPos),LOGMODES);
+                    if(avgOddEvenFreq>avgFreqGap)
+                      {
+                        subLine=3;
+                        logFilePtr->addToAux("m23 switch subline 3");
+                      }
                   }
                 switchState(MBSETUPLINE);
               }
             else
               {
-                avgFreqGap+=demod[i];
+                if(avgFreqGapCounter>=AVGFRQOFFSET) avgFreqGap+=demod[i];
                 avgFreqGapCounter++;
+                logFilePtr->addToAux(QString("m23\t%1\t%2\t%3").arg(demod[i]).arg(avgFreqGapCounter).arg(avgFreqGap));
               }
           }
           break;
@@ -313,7 +324,8 @@ bool modeBase::getPixels()
       //      addToLog(QString("modebase:getPixels[0] =%1").arg(sampleCounter+rxSampleCounter),LOGMODES);
       //      color=128+lround(((double)avgSample/(double)avgSampleCounter-fc)*255./dev);
       color=128+lround(((double)sample-fc)*255./dev);
-      if(color<0) color=0; if (color>255) color=255;
+      if(color<0) color=0;
+      if (color>255) color=255;
       pixelArrayPtr[pixelCounter]=(unsigned char)color;
       pixelCounter++;
       avgSample=0;
@@ -390,14 +402,9 @@ void modeBase::yuvConversion(unsigned char *array)
       b=(100*array[i]+178*blueArrayPtr[i]-22695)/100;
       g=(100*array[i]- 71*redArrayPtr[i]-33*blueArrayPtr[i]+13260)/100;
 //      r=b=g=array[i]; //test
-
-
-      r=(r>255 ? 255 : r);
-      r=(r<0 ? 0 : r);
-      b=(b>255 ? 255 : b);
-      b=(b<0 ? 0 : b);
-      g=(g>255 ? 255 : g);
-      g=(g<0 ? 0 : g);
+      r=(r>255 ? 255 : r); r=(r<0 ? 0 : r);
+      b=(b>255 ? 255 : b); b=(b<0 ? 0 : b);
+      g=(g>255 ? 255 : g); g=(g<0 ? 0 : g);
       pixelArray[i]=qRgb(r,g,b);
     }
   displayLineCounter++;

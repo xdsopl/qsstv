@@ -1,7 +1,7 @@
 #include "csoundout.h"
 #include "appglobal.h"
-#include "dsp/synthes.h"
-#include "utils/vector.h"
+#include "synthes.h"
+#include "vector.h"
 
 CSoundOut::CSoundOut()
 {

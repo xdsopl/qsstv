@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -21,7 +21,7 @@
 #ifndef MODEBASE_H
 #define MODEBASE_H
 #include "../sstvparam.h"
-#include "widgets/imageviewer.h"
+#include "imageviewer.h"
 #include <math.h>
 
 #define MODESTATESCALER 10
@@ -50,6 +50,8 @@
 #define stFULL      (190*MODESTATESCALER)
 #define stBITS			(200*MODESTATESCALER)
 
+#define AVGFRQOFFSET 20
+
 
 
 class imageViewer;
@@ -63,7 +65,6 @@ public:
 	virtual ~modeBase();
   /*!
     \brief initialize mode specific items
-
     This function is called by modeInit(), and can overwrite some or all of the local parameters. At least it should set the visible length.
     \param[in] clock  can be the rxClock or the txClock
 */
@@ -75,12 +76,6 @@ public:
      if(isRetrace) return syncPos0;
      else return (syncPos0+10);
 		}
-
-//  virtual unsigned long retraceAdjust(unsigned long syncPos)
-//    {
-//      return syncPos-lineTimeTableRX[1];
-//    }
-
 	void redrawFast(bool r);
   virtual eModeBase process(quint16 *demod, unsigned int syncPos, bool goToSync, unsigned int rxPos);
   void init(DSPFLOAT clk);
@@ -144,7 +139,6 @@ protected:
       \brief setup the rx mode timing for one subline  at a time.
 
       Each line is subdivided in subLines. A subLine can be a pixel line, a delay or a sync. This function is called from the receive function in the modebase.
-      \param subLine  active phase in the reception of a image line
   */
   virtual embState rxSetupLine()=0;
 
@@ -152,7 +146,6 @@ protected:
       \brief setup the tx mode timing for one subline  at a time.
 
       Each line is subdivided in subLines. A subLine can be a pixel line, a delay or a sync. This function is called from transmit function in the modebase.
-      \param subln  active phase in the reception of a image line
   */
   virtual embState txSetupLine()=0;
 
@@ -173,6 +166,7 @@ private:
   int avgSample;
   int avgSampleCounter;
   bool narrow;
+  uint avgOddEvenFreq;
 
 
 };

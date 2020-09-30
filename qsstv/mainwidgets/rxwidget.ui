@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1004</width>
-    <height>660</height>
+    <width>993</width>
+    <height>651</height>
    </rect>
   </property>
   <property name="sizePolicy">
@@ -240,7 +240,7 @@
         </size>
        </property>
        <property name="currentIndex">
-        <number>1</number>
+        <number>0</number>
        </property>
        <widget class="QWidget" name="sstvTab">
         <attribute name="title">
@@ -267,11 +267,11 @@
            <property name="spacing">
             <number>1</number>
            </property>
-           <item row="5" column="2">
+           <item row="4" column="2">
             <widget class="QComboBox" name="defaultImageFormatComboBox"/>
            </item>
-           <item row="3" column="0">
-            <widget class="QLabel" name="squelchLabel">
+           <item row="2" column="0">
+            <widget class="QLabel" name="sensitivityLabel">
              <property name="toolTip">
               <string>Sensitivity - Higher is more sensitive</string>
              </property>
@@ -279,14 +279,14 @@
               <string>Sensitivity - Higher is more sensitive</string>
              </property>
              <property name="text">
-              <string>Signals</string>
+              <string>Sensitivity</string>
              </property>
              <property name="alignment">
               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
              </property>
             </widget>
            </item>
-           <item row="5" column="0">
+           <item row="4" column="0">
             <widget class="QLabel" name="imageFormatLabel">
              <property name="text">
               <string>Default Image format</string>
@@ -296,7 +296,7 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="0">
+           <item row="3" column="0">
             <widget class="QLabel" name="modeLabel">
              <property name="text">
               <string>Mode</string>
@@ -306,7 +306,7 @@
              </property>
             </widget>
            </item>
-           <item row="2" column="0">
+           <item row="1" column="0">
             <widget class="QCheckBox" name="autoSaveCheckBox">
              <property name="toolTip">
               <string>Save image when complete</string>
@@ -322,40 +322,13 @@
              </property>
             </widget>
            </item>
-           <item row="4" column="2">
+           <item row="3" column="2">
             <widget class="QComboBox" name="sstvModeComboBox"/>
            </item>
+           <item row="2" column="2">
+            <widget class="QComboBox" name="sensitivityComboBox"/>
+           </item>
            <item row="0" column="0">
-            <widget class="QCheckBox" name="useVISCheckBox">
-             <property name="toolTip">
-              <string>Use VIS Code to start</string>
-             </property>
-             <property name="statusTip">
-              <string>Use VIS Code to start</string>
-             </property>
-             <property name="layoutDirection">
-              <enum>Qt::RightToLeft</enum>
-             </property>
-             <property name="text">
-              <string>Use VIS</string>
-             </property>
-            </widget>
-           </item>
-           <item row="3" column="2">
-            <widget class="QComboBox" name="squelchComboBox">
-             <item>
-              <property name="text">
-               <string>Normal</string>
-              </property>
-             </item>
-             <item>
-              <property name="text">
-               <string>DX</string>
-              </property>
-             </item>
-            </widget>
-           </item>
-           <item row="1" column="0">
             <widget class="QCheckBox" name="autoSlantAdjustCheckBox">
              <property name="toolTip">
               <string>Correct slant automatically</string>
@@ -371,7 +344,7 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="0">
+           <item row="5" column="0">
             <widget class="QLabel" name="saveLabel">
              <property name="text">
               <string>Save if Complete (%)</string>
@@ -381,7 +354,7 @@
              </property>
             </widget>
            </item>
-           <item row="6" column="2">
+           <item row="5" column="2">
             <widget class="QSpinBox" name="completeSpinBox"/>
            </item>
           </layout>
@@ -448,7 +421,7 @@
         <attribute name="title">
          <string>DRM</string>
         </attribute>
-        <layout class="QVBoxLayout" name="verticalLayout_6" stretch="1,0,1,0,0,0">
+        <layout class="QVBoxLayout" name="verticalLayout_6" stretch="0,0,0,1,0,0">
          <property name="spacing">
           <number>1</number>
          </property>
@@ -527,7 +500,7 @@
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>55</height>
+                 <height>85</height>
                 </size>
                </property>
                <property name="maximumSize">
@@ -714,7 +687,7 @@
                <property name="minimumSize">
                 <size>
                  <width>0</width>
-                 <height>55</height>
+                 <height>85</height>
                 </size>
                </property>
                <property name="maximumSize">
@@ -894,7 +867,7 @@
            <property name="sizeHint" stdset="0">
             <size>
              <width>20</width>
-             <height>95</height>
+             <height>150</height>
             </size>
            </property>
           </spacer>

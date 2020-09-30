@@ -1,85 +1,42 @@
-
 /******************************************************************************/
-
 /*                                                                            */
-
 /*  University of Kaiserslautern, Institute of Communications Engineering     */
-
-/*  Copyright (C) 2004 Andreas Dittrich, Torsten Schorr                       */
-
+/*  Copyright (C) 2004 Torsten Schorr                                         */
 /*                                                                            */
-
-/*  Author(s)    : Andreas Dittrich (dittrich@eit.uni-kl.de),                 */
-
-/*                 Torsten Schorr (schorr@eit.uni-kl.de)                      */
-
-/*  Project start: 27.07.2004                                                 */
-
-/*  Last change  : 27.07.2004                                                 */
-
+/*  Author(s)    : Torsten Schorr (schorr@eit.uni-kl.de)                      */
+/*  Project start: 23.07.2004                                                 */
+/*  Last change  : 23.07.2004                                                 */
 /*                                                                            */
-
 /******************************************************************************/
-
 /*                                                                            */
-
 /*  This program is free software; you can redistribute it and/or modify      */
-
 /*  it under the terms of the GNU General Public License as published by      */
-
 /*  the Free Software Foundation; either version 2 of the License, or         */
-
 /*  (at your option) any later version.                                       */
-
 /*                                                                            */
-
 /*  This program is distributed in the hope that it will be useful,           */
-
 /*  but WITHOUT ANY WARRANTY; without even the implied warranty of            */
-
 /*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             */
-
 /*  GNU General Public License for more details.                              */
-
 /*                                                                            */
-
 /*  You should have received a copy of the GNU General Public License         */
-
 /*  along with this program; if not, write to the Free Software               */
-
 /*  Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA */
-
 /*                                                                            */
-
 /******************************************************************************/
-
-
 /******************************************************************************/
-
 /*                                                                            */
-
 /*  crc16_bytewise.c                                                          */
-
 /*                                                                            */
-
 /******************************************************************************/
-
 /*  Description:                                                              */
-
 /*  CRC-16 checksum calculation of a byte stream                              */
-
 /*  Usage:                                                                    */
-
 /*                                                                            */
-
-/*  crc16_bytewise(double *checksum, unsigned char *in, long N);                                         */
-
+/*  crc16_bytewise(double *checksum, unsigned char *in, long N);              */
 /*                                                                            */
-
 /*  calculates double checksum of uint8 bytes                                 */
-
 /*                                                                            */
-
 /******************************************************************************/
 
 

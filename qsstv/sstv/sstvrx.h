@@ -3,7 +3,7 @@
 
 #include <QObject>
 #include "appdefs.h"
-#include "utils/buffermanag.h"
+#include "buffermanag.h"
 #include "syncprocessor.h"
 
 
@@ -29,18 +29,22 @@ public:
   ~sstvRx();
   void init();
   void setFilters();
-  void run(DSPFLOAT *dataPtr, unsigned int *inputVolumePtr);
+  void run(DSPFLOAT *dataPtr, DSPFLOAT *volumePtr);
   void eraseImage();
   syncProcessor syncNarrowProc;
   syncProcessor   syncWideProc;
-  #ifndef QT_NO_DEBUG
+  bool isBusy()
+  {
+    return((SSTVState!=HUNTING) && (SSTVState!=END));
+  }
+#ifndef QT_NO_DEBUG
   unsigned int setOffset(unsigned int offset,bool ask);
 #endif
 
 signals:
   void resetCall();
 private:
-//  void getData();
+  //  void getData();
   void process();
   void switchState(eSSTVState  newState);
   void resetParams(bool bufferReset);
@@ -49,14 +53,15 @@ private:
   void rewindBuffers(uint rlen);
 
 
-//  DSPFLOAT rxHoldingBuffer[RXSTRIPE];
+  //  DSPFLOAT rxHoldingBuffer[RXSTRIPE];
   buffer<quint16,22> bufferVideoDemod;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
-//  buffer<quint16,22> bufferSyncDemod;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
+  //  buffer<quint16,22> bufferSyncDemod;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
   buffer<DSPFLOAT,22> bufferSync1200Vol;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
   buffer<DSPFLOAT,22> bufferSync1900Vol;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
   buffer<DSPFLOAT,22> bufferTest;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
-  buffer<unsigned int,22> bufferInputVol;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
-//  buffer<quint16,22> bufferInputVolume;
+  buffer<DSPFLOAT,22> bufferInputVol;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
+//  buffer<unsigned int,22> bufferInputVol;  // 2^22= 4194304, divided by samplingrate 12000 gives 349 seconds buffering
+  //  buffer<quint16,22> bufferInputVolume;
 
   syncFilter *syncFilterPtr;
   videoFilter *videoFilterPtr;

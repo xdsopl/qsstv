@@ -1,10 +1,12 @@
 #include "fftcalc.h"
+#include <string.h>
 
 fftCalc::fftCalc()
 {
   plan=NULL;
   out=NULL;
   dataBuffer=NULL;
+  dataBufferWindowed=NULL;
 }
 
 fftCalc::~fftCalc()
@@ -16,20 +18,28 @@ fftCalc::~fftCalc()
 
 void fftCalc::init(int length,int nblocks,int isamplingrate)
 {
+  int i;
   windowSize=length;
   fftLength=windowSize*nblocks;
-  blocks=nblocks;
+  numBlocks=nblocks;
   blockIndex=0;
   createHamming();
   samplingrate=isamplingrate;
   //prepare fft
   if(plan)fftw_destroy_plan(plan);
   if(out) fftw_free(out);
-  if(dataBuffer) fftw_free(dataBuffer);
+  if(dataBuffer) delete [] dataBuffer;
+
+  dataBuffer=new double[fftLength];
+  for(i=0;i<fftLength;i++)
+    {
+      dataBuffer[i]=0.;
+    }
+  if(dataBufferWindowed) fftw_free(dataBufferWindowed);
   out =         (double *)fftw_malloc(fftLength * sizeof(double));
-  dataBuffer  = (double *)fftw_malloc(fftLength * sizeof(double));
+  dataBufferWindowed  = (double *)fftw_malloc(fftLength * sizeof(double));
   // create the fftw plan
-  plan = fftw_plan_r2r_1d(fftLength, dataBuffer, out, FFTW_R2HC, FFTW_ESTIMATE);
+  plan = fftw_plan_r2r_1d(fftLength, dataBufferWindowed, out, FFTW_R2HC, FFTW_ESTIMATE);
 }
 
 void fftCalc::createHamming()
@@ -45,21 +55,15 @@ void fftCalc::createHamming()
 
 void fftCalc::realFFT(double *data)
 {
-  int i,j;
-  for(i=0,j=windowSize*blockIndex;i<windowSize;i++,j++)
+  int i;
+  memmove(&dataBuffer[0],&dataBuffer[windowSize],sizeof(double)*windowSize*(numBlocks-1));
+  memmove(&dataBuffer[windowSize*(numBlocks-1)],data,sizeof(double)*windowSize);
+  for(i=0;i<fftLength;i++)
     {
-      dataBuffer[j]=data[i]*hammingBuffer[i];
-
+      dataBufferWindowed[i]=dataBuffer[i]*hammingBuffer[i];
     }
-  doFFT();
-}
-
-void fftCalc::doFFT()
-{
-  blockIndex++;
-  if(blockIndex<blocks) return;
-  blockIndex=0;
   fftw_execute(plan);
 }
+
 
 

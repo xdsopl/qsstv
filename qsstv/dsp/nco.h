@@ -88,8 +88,8 @@ class NCO  // numerical controlled oscillator
       return(s1=sinVal);
     }
 	/** produce the I & Q values
-	\param[out] I the I component (val multiplied by a sine)
-	\param[out] Q the Q component (val multiplied by a cosine)
+  \param[out] i the I component (val multiplied by a sine)
+  \param[out] q the Q component (val multiplied by a cosine)
 	\param[in] val the real value of the sample
  */
   void multiply(double &i, double &q,double val)

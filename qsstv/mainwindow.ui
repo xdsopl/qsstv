@@ -175,7 +175,7 @@
      <x>0</x>
      <y>0</y>
      <width>831</width>
-     <height>18</height>
+     <height>22</height>
     </rect>
    </property>
    <property name="font">
@@ -333,6 +333,11 @@
   <action name="actionSaveWaterfallImage">
    <property name="text">
     <string>Save Waterfall Image</string>
+   </property>
+  </action>
+  <action name="actionBigTransfer">
+   <property name="text">
+    <string>BigTransfer</string>
    </property>
   </action>
  </widget>

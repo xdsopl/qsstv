@@ -271,13 +271,13 @@
           <number>1</number>
          </property>
          <property name="maximum">
-          <number>1000</number>
+          <number>100000</number>
          </property>
          <property name="pageStep">
           <number>10</number>
          </property>
          <property name="sliderPosition">
-          <number>25</number>
+          <number>20</number>
          </property>
          <property name="tracking">
           <bool>false</bool>
@@ -286,10 +286,10 @@
           <enum>Qt::Horizontal</enum>
          </property>
          <property name="invertedAppearance">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="invertedControls">
-          <bool>true</bool>
+          <bool>false</bool>
          </property>
          <property name="tickPosition">
           <enum>QSlider::TicksBelow</enum>
@@ -1047,10 +1047,7 @@
              <height>16777215</height>
             </size>
            </property>
-           <property name="currentText">
-            <string>2.2 kHz</string>
-           </property>
-           <item>
+            <item>
             <property name="text">
              <string>2.2 kHz</string>
             </property>

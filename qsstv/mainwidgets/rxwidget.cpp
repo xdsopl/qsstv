@@ -13,7 +13,7 @@
 #include "guiconfig.h"
 #include "mainwindow.h"
 #include "configparams.h"
-#include "ftp.h"
+#include "ftpthread.h"
 
 
 rxWidget::rxWidget(QWidget *parent):QWidget(parent),ui(new Ui::rxWidget)
@@ -30,7 +30,7 @@ rxWidget::rxWidget(QWidget *parent):QWidget(parent),ui(new Ui::rxWidget)
 
 
   ui->sstvModeComboBox->addItem("Auto");
-  for(i=0;i<NUMSSTVMODES-1;i++)
+  for(i=0;i<NUMSSTVMODES;i++)
     {
       ui->sstvModeComboBox->addItem(getSSTVModeNameLong((esstvMode)i));
     }
@@ -39,12 +39,15 @@ rxWidget::rxWidget(QWidget *parent):QWidget(parent),ui(new Ui::rxWidget)
       QString text = tr("%1").arg(QString(format));
       ui->defaultImageFormatComboBox->addItem(text);
     }
+  QStringList strLst;
+  strLst << "Low" << "Normal"  << "High" << "DX";
+  ui->sensitivityComboBox->insertItems(0,strLst);
   connect(&rxFunctionsPtr->sstvRxPtr->syncWideProc,SIGNAL(callReceived(QString)),SLOT(slotNewCall(QString)));
   connect(rxFunctionsPtr->sstvRxPtr,SIGNAL(resetCall()),SLOT(slotResetCall()));
   connect(ui->logPushButton,SIGNAL(clicked()),SLOT(slotLogCall()));
   connect(ui->whoPushButton,SIGNAL(clicked()),SLOT(slotWho()));
-  notifyRXIntf = new ftpInterface("RX Notification FTP");
-
+  connect(&ff,SIGNAL(listingDone(bool)),SLOT(slotWhoResult(bool)));
+  doRemove=false;
 }
 
 rxWidget::~rxWidget()
@@ -52,7 +55,7 @@ rxWidget::~rxWidget()
   writeSettings();
   rxFunctionsPtr->terminate();
   delete rxFunctionsPtr;
-  delete notifyRXIntf;
+  delete notifyRXIntfPtr;
 }
 
 void rxWidget::init()
@@ -74,11 +77,17 @@ void rxWidget::init()
   connect(ui->startToolButton, SIGNAL(clicked()),SLOT(slotStart()));
   connect(ui->stopToolButton, SIGNAL(clicked()),SLOT(slotStop()));
   connect(ui->resyncToolButton,SIGNAL(clicked()),SLOT(slotResync()));
+  connect(ui->autoSaveCheckBox,SIGNAL(clicked()),SLOT(slotGetParams()));
   connect(ui->autoSlantAdjustCheckBox,SIGNAL(clicked()),SLOT(slotGetParams()));
-  connect(ui->squelchComboBox,SIGNAL(currentIndexChanged(int)),SLOT(slotGetParams()));
+
+
+
+
+  connect(ui->sensitivityComboBox,SIGNAL(currentIndexChanged(int)),SLOT(slotGetParams()));
   connect(ui->settingsTableWidget,SIGNAL(currentChanged(int)),this, SLOT(slotTransmissionMode(int)));
   connect(ui->eraseToolButton, SIGNAL(clicked()),SLOT(slotErase()));
   connect(ui->saveToolButton, SIGNAL(clicked()),SLOT(slotSave()));
+
   if(slowCPU)
     {
       ui->drmFACLabel->hide();
@@ -90,19 +99,18 @@ void rxWidget::init()
     {
       ui->rxNotificationList->hide();
       ui->whoPushButton->hide();
-//      ui->whoSpacer->hide();
+      //      ui->whoSpacer->hide();
     }
+  setOnlineStatus(true, onlineStatusText);
 }
 
 void rxWidget::readSettings()
 {
   QSettings qSettings;
   qSettings.beginGroup("RX");
-  useVIS=qSettings.value("useVIS",false).toBool();
   autoSlantAdjust=qSettings.value("autoSlantAdjust",false).toBool();
   autoSave=qSettings.value("autoSave",true).toBool();
-  squelch=qSettings.value("squelch",1).toInt();
-  //  filterIndex=qSettings.value("filterIndex",0).toInt();
+  sensitivity=qSettings.value("sensitivity",1).toInt();
   sstvModeIndexRx=(esstvMode)qSettings.value("sstvModeIndexRx",0).toInt();
   defaultImageFormat=qSettings.value("defaultImageFormat","png").toString();
   minCompletion=qSettings.value("minCompletion",25).toInt();
@@ -116,10 +124,9 @@ void rxWidget::writeSettings()
   QSettings qSettings;
   qSettings.beginGroup("RX");
   getParams();
-  qSettings.setValue("useVIS",useVIS);
   qSettings.setValue("autoSlantAdjust",autoSlantAdjust);
   qSettings.setValue("autoSave",autoSave);
-  qSettings.setValue("squelch",squelch);
+  qSettings.setValue("sensitivity",sensitivity);
   qSettings.setValue("sstvModeIndexRx",sstvModeIndexRx);
   qSettings.setValue("defaultImageFormat",defaultImageFormat);
   qSettings.setValue("minCompletion",minCompletion);
@@ -129,10 +136,9 @@ void rxWidget::writeSettings()
 void rxWidget::getParams()
 {
   int temp;
-  getValue(useVIS,ui->useVISCheckBox);
   getValue(autoSlantAdjust,ui->autoSlantAdjustCheckBox);
   getValue(autoSave,ui->autoSaveCheckBox);
-  getIndex(squelch,ui->squelchComboBox);
+  getIndex(sensitivity,ui->sensitivityComboBox);
   getIndex(temp,ui->sstvModeComboBox);
   sstvModeIndexRx=(esstvMode)temp;
   getValue(defaultImageFormat,ui->defaultImageFormatComboBox);
@@ -141,10 +147,9 @@ void rxWidget::getParams()
 
 void rxWidget::setParams()
 {
-  setValue(useVIS,ui->useVISCheckBox);
   setValue(autoSlantAdjust,ui->autoSlantAdjustCheckBox);
   setValue(autoSave,ui->autoSaveCheckBox);
-  setIndex(squelch,ui->squelchComboBox);
+  setIndex(sensitivity,ui->sensitivityComboBox);
   setIndex(sstvModeIndexRx,ui->sstvModeComboBox);
   setValue(defaultImageFormat,ui->defaultImageFormatComboBox);
   setValue(minCompletion,ui->completeSpinBox);
@@ -232,26 +237,107 @@ void rxWidget::slotSave()
   QString info;
   dirDialog d(this);
   if(transmissionModeIndex==TRXSSTV)
-  {
-    path=rxSSTVImagesPath;
+    {
+      path=rxSSTVImagesPath;
 
-  }
+    }
   else
-  {
-    QMessageBox::information(this,"Saving image","Not available in DRM mode");
-    return;
-  }
+    {
+      QMessageBox::information(this,"Saving image","Not available in DRM mode");
+      return;
+    }
 
   info="";
   QString fileName=d.saveFileName(path,"*","png");
-  if (fileName==QString::null) return ;
+  if (fileName.isNull()) return ;
   getImageViewerPtr()->save(fileName,defaultImageFormat,true,false);
   dispatcherPtr->saveImage(fileName,info);
 }
 
+void rxWidget::setOnlineStatus(bool online, QString info)
+{
+  QString fn;
+
+  if(!online) dispatcherPtr->showOffLine();
+
+  if(ff.isBusy())
+    {
+      return;
+    }
+
+  fn=myCallsign+"_"+info;
+  //  ftpFunctions ff;
+  // we can use onlineStatusInt directly because this function is only used from the main thread
+
+  if(hybridFtpRemoteHost.isEmpty()) return;
+
+  if(online && onlineStatusEnabled && transmissionModeIndex==TRXDRM)
+    {
+      ff.setupFtp("OnlineStatus",hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin, hybridFtpPassword,hybridFtpRemoteDirectory+"/"+onlineStatusDir);
+      ff.uploadData(QByteArray("Dummy\r\n"),fn,false,true);
+    }
+  else if(!online && transmissionModeIndex==TRXDRM)
+    {
+      displayMBoxEvent *stmb;
+      stmb= new displayMBoxEvent("Hybrid Server","Cleaning up files on server");
+      QApplication::postEvent( dispatcherPtr, stmb );  // Qt will delete it when done
+      ff.setupFtp("OnlineStatus",hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin, hybridFtpPassword,hybridFtpRemoteDirectory);
+
+
+      if(!onlineStatusDir.isEmpty()&& onlineStatusEnabled)
+        {
+          ff.changePath(onlineStatusDir,true);
+          ff.mremove("*"+myCallsign+"_*", true,false);
+          ff.changePath("..",true);
+        }
+      if(!hybridFtpHybridFilesDirectory.isEmpty())
+        {
+          ff.changePath(hybridFtpHybridFilesDirectory,true);
+          ff.mremove("*"+myCallsign+"-*", true,false);
+          ff.changePath("..",true);
+         }
+       if(!hybridNotifyDir.isEmpty())
+         {
+          ff.changePath(hybridNotifyDir,true);
+          ff.mremove("*"+myCallsign+"-*", true,true);
+         }
+    }
+}
+
+
+
 void rxWidget::slotWho()
 {
-  dispatcherPtr->who();
+  // get a list of online callsigns
+  if(!ff.isBusy() && !onlineStatusDir.isEmpty())
+    {
+      ff.setupFtp("WhoResult",hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin, hybridFtpPassword,hybridFtpRemoteDirectory+"/"+onlineStatusDir);
+      ff.listFiles("*", true);
+    }
+  //slotWhoResult is called when we have the info
+}
+
+void rxWidget::slotWhoResult(bool err )
+{
+  int i;
+  QString info;
+  QDateTime lastModif;
+  QDateTime now = QDateTime::currentDateTime();
+  QList <QUrlInfo> users;
+
+  if(err) return;
+
+  users=ff.getListing();
+
+  for(i=0;i<users.count();i++)
+    {
+      lastModif=users.at(i).lastModified();
+      if(lastModif.secsTo(now)<=3600)
+        {
+          info += users.at(i).name()+"\n";
+        }
+    }
+  ui->rxNotificationList->setPlainText(info);
 }
 
 void rxWidget::setSettingsTab()
@@ -302,6 +388,11 @@ void rxWidget::startRX(bool st)
     {
       dispatcherPtr->idleAll();
     }
+}
+
+bool rxWidget::rxBusy()
+{
+  return rxFunctionsPtr->rxBusy();
 }
 
 void rxWidget::setSSTVStatusText(QString txt)

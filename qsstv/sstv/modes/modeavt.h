@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -22,17 +22,18 @@
 #define MODEAVT_H
 
 #include "modebase.h"
+enum eTrailerState {D1900,D1900END,DELAYHALF,DELAYFULL,BITS,CALCDELAY,WAITSTART};
 
 /**
 	@author Johan Maes <on4qz@telenet.be>
 */
 class modeAVT : public modeBase
 {
-  enum eTrailerState {D1900,D1900END,DELAYHALF,DELAYFULL,BITS,CALCDELAY,WAITSTART};
+
 public:
   modeAVT(esstvMode m,unsigned int len,bool tx,bool narrowMode);
   ~modeAVT();
-  eModeBase process(quint16 *demod, unsigned int syncPos, bool goToSync, unsigned int rxPos);
+  eModeBase process(quint16 *demod, unsigned int, bool, unsigned int rxPos);
 protected:
   embState rxSetupLine();
 	void calcPixelPositionTable(unsigned int colorLine,bool tx);
@@ -46,6 +47,8 @@ protected:
   eTrailerState trailerState;
   DSPFLOAT avgSample;
   unsigned int delay;
+private:
+  void switchTrailerState(eTrailerState newState);
 };
 
 

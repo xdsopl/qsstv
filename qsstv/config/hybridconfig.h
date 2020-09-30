@@ -4,13 +4,17 @@
 #include "baseconfig.h"
 
 extern bool enableHybridRx;
-//extern bool enableSpecialServer;
+
 extern int hybridFtpPort;
 extern QString hybridFtpRemoteHost;
 extern QString hybridFtpRemoteDirectory;
 extern QString hybridFtpLogin;
 extern QString hybridFtpPassword;
 extern QString hybridFtpHybridFilesDirectory;
+
+extern bool enableHybridNotify;
+extern QString hybridNotifyDir;
+extern QString onlineStatusDir;
 
 
 namespace Ui {

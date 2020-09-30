@@ -70,11 +70,11 @@ struct elCountry {
 	char	strDesc [MAX_LEN_DESC_COUNTRY_CODE+1];
 	};
  
-extern const struct elCountry TableCountryCode[LEN_TABLE_COUNTRY_CODE];
+//extern const struct elCountry TableCountryCode[LEN_TABLE_COUNTRY_CODE];
 
 /* Get country name from ISO 3166 A2 */
 
-string GetISOCountryName(const string strA2);
+//string GetISOCountryName(const string strA2);
 
 /* Language code table according to ISO/IEC 639-2 */
 
@@ -88,11 +88,11 @@ struct elLanguage {
 	char	strDesc [MAX_LEN_DESC_ISO_LANGUAGE_CODE+1];
 	};
  
-extern const struct elLanguage TableISOLanguageCode[LEN_TABLE_ISO_LANGUAGE_CODE];
+//extern const struct elLanguage TableISOLanguageCode[LEN_TABLE_ISO_LANGUAGE_CODE];
 
 /* Get language name from ISO 3166 */
 
-string GetISOLanguageName(const string strA3);
+//string GetISOLanguageName(const string strA3);
 
 /* CIRAF zones */
 #define LEN_TABLE_CIRAF_ZONES			86

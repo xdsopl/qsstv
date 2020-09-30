@@ -39,16 +39,16 @@
 #include <cctype>
 #include <cstring>
 #include <iostream>
-#include "drmtx/drmtransmitter.h"
+#include "drmtransmitter.h"
 #include <QDebug>
 
-#if HAVE_LIBZ
-#include <zlib.h>
-#else
-#ifdef HAVE_LIBFREEIMAGE
-# include <FreeImage.h>
-#endif
-#endif
+//#if HAVE_LIBZ
+//#include <zlib.h>
+//#else
+//#ifdef HAVE_LIBFREEIMAGE
+//# include <FreeImage.h>
+//#endif
+//#endif
 
 #define RUNINLEN 24
 #define RUNOUTLEN 10
@@ -57,23 +57,23 @@ static int bsrTransportId=2;
 
 using namespace std; 
 /* Implementation *************************************************************/
-ostream & operator<<(ostream & out, CDateAndTime & d)
-{
-	d.dump(out);
-	return out;
-}
+//ostream & operator<<(ostream & out, CDateAndTime & d)
+//{
+//	d.dump(out);
+//	return out;
+//}
 
-ostream & operator<<(ostream & out, CMOTObject & o)
-{
-	o.dump(out);
-	return out;
-}
+//ostream & operator<<(ostream & out, CMOTObject & o)
+//{
+//	o.dump(out);
+//	return out;
+//}
 
-ostream & operator<<(ostream & out, CMOTDirectory & o)
-{
-	o.dump(out);
-	return out;
-}
+//ostream & operator<<(ostream & out, CMOTDirectory & o)
+//{
+//	o.dump(out);
+//	return out;
+//}
 
 /******************************************************************************\
 * Encoder                                                                      *
@@ -828,423 +828,423 @@ CMOTDABEnc::Reset()
 /******************************************************************************\
 * Decoder                                                                      *
 \******************************************************************************/
-_BOOLEAN
-CMOTDABDec::NewObjectAvailable()
-{
-	return qiNewObjects.empty() == false;
-}
+//_BOOLEAN
+//CMOTDABDec::NewObjectAvailable()
+//{
+//	return qiNewObjects.empty() == false;
+//}
 
 
-void
-CMOTDABDec::GetNextObject(CMOTObject & NewMOTObject)
-{
-	if (!qiNewObjects.empty())
-	{
-		TTransportID firstNew = qiNewObjects.front();
-		qiNewObjects.pop();
-		NewMOTObject = MOTCarousel[firstNew];
-	}
-	else
-	{
-		fprintf(stderr, "GetObject called when queue empty\n");
-		fflush(stderr);
-	}
-}
+//void
+//CMOTDABDec::GetNextObject(CMOTObject & NewMOTObject)
+//{
+//	if (!qiNewObjects.empty())
+//	{
+//		TTransportID firstNew = qiNewObjects.front();
+//		qiNewObjects.pop();
+//		NewMOTObject = MOTCarousel[firstNew];
+//	}
+//	else
+//	{
+//		fprintf(stderr, "GetObject called when queue empty\n");
+//		fflush(stderr);
+//	}
+//}
 
-void
-CMOTDABDec::DeliverIfReady(TTransportID TransportID)
-{
-	CMOTObject & o = MOTCarousel[TransportID];
-	if ((!o.bComplete) && o.bHasHeader && o.Body.Ready())
-	{
-		o.bComplete = true;
-		if (o.Body.IsZipped())
-		{
-			if (o.Body.uncompress() == false)
-				/* Can't unzip so change the filename */
-				o.strName = string(o.strName.c_str()) + ".gz";
-		}
-		//cerr << o << endl;;
-		qiNewObjects.push(TransportID);
-	}
-}
+//void
+//CMOTDABDec::DeliverIfReady(TTransportID TransportID)
+//{
+//	CMOTObject & o = MOTCarousel[TransportID];
+//	if ((!o.bComplete) && o.bHasHeader && o.Body.Ready())
+//	{
+//		o.bComplete = true;
+//		if (o.Body.IsZipped())
+//		{
+//			if (o.Body.uncompress() == false)
+//				/* Can't unzip so change the filename */
+//				o.strName = string(o.strName.c_str()) + ".gz";
+//		}
+//		//cerr << o << endl;;
+//		qiNewObjects.push(TransportID);
+//	}
+//}
 
-void
-CMOTDABDec::AddDataUnit(CVector < _BINARY > &vecbiNewData)
-{
-	int iLenGroupDataField;
-	CCRC CRCObject;
-	_BOOLEAN bCRCOk;
-	int iSegmentNum;
-	_BINARY biLastFlag;
-  _BINARY btxTransportIDFlag = 0;
-	int iLenIndicat;
-	int iSegmentSize;
-	TTransportID TransportID = -1;
+//void
+//CMOTDABDec::AddDataUnit(CVector < _BINARY > &vecbiNewData)
+//{
+//	int iLenGroupDataField;
+//	CCRC CRCObject;
+//	_BOOLEAN bCRCOk;
+//	int iSegmentNum;
+//	_BINARY biLastFlag;
+//  _BINARY btxTransportIDFlag = 0;
+//	int iLenIndicat;
+//	int iSegmentSize;
+//	TTransportID TransportID = -1;
 
-	/* Get length of data unit */
-	iLenGroupDataField = vecbiNewData.Size();
+//	/* Get length of data unit */
+//	iLenGroupDataField = vecbiNewData.Size();
 
-	/* CRC check ------------------------------------------------------------ */
-	/* We do the CRC check at the beginning no matter if it is used or not
-	   since we have to reset bit access for that */
-	/* Reset bit extraction access */
-	vecbiNewData.ResetBitAccess();
+//	/* CRC check ------------------------------------------------------------ */
+//	/* We do the CRC check at the beginning no matter if it is used or not
+//	   since we have to reset bit access for that */
+//	/* Reset bit extraction access */
+//	vecbiNewData.ResetBitAccess();
 
-	/* Check the CRC of this packet */
-	CRCObject.Reset(16);
+//	/* Check the CRC of this packet */
+//	CRCObject.Reset(16);
 
-	/* "- 2": 16 bits for CRC at the end */
-	for (size_t i = 0; i < size_t(iLenGroupDataField / SIZEOF__BYTE) - 2; i++)
-		CRCObject.AddByte((_BYTE) vecbiNewData.Separate(SIZEOF__BYTE));
+//	/* "- 2": 16 bits for CRC at the end */
+//	for (size_t i = 0; i < size_t(iLenGroupDataField / SIZEOF__BYTE) - 2; i++)
+//		CRCObject.AddByte((_BYTE) vecbiNewData.Separate(SIZEOF__BYTE));
 
-	bCRCOk = CRCObject.CheckCRC(vecbiNewData.Separate(16));
+//	bCRCOk = CRCObject.CheckCRC(vecbiNewData.Separate(16));
 
-	/* MSC data group header ------------------------------------------------ */
-	/* Reset bit extraction access */
-	vecbiNewData.ResetBitAccess();
+//	/* MSC data group header ------------------------------------------------ */
+//	/* Reset bit extraction access */
+//	vecbiNewData.ResetBitAccess();
 
-	/* Extension flag */
-	const _BINARY biExtensionFlag = (_BINARY) vecbiNewData.Separate(1);
+//	/* Extension flag */
+//	const _BINARY biExtensionFlag = (_BINARY) vecbiNewData.Separate(1);
 
-	/* CRC flag */
-	const _BINARY biCRCFlag = (_BINARY) vecbiNewData.Separate(1);
+//	/* CRC flag */
+//	const _BINARY biCRCFlag = (_BINARY) vecbiNewData.Separate(1);
 
-	/* Segment flag */
-	const _BINARY biSegmentFlag = (_BINARY) vecbiNewData.Separate(1);
+//	/* Segment flag */
+//	const _BINARY biSegmentFlag = (_BINARY) vecbiNewData.Separate(1);
 
-	/* User access flag */
-	const _BINARY biUserAccFlag = (_BINARY) vecbiNewData.Separate(1);
+//	/* User access flag */
+//	const _BINARY biUserAccFlag = (_BINARY) vecbiNewData.Separate(1);
 
-	/* Data group type */
-	const int iDataGroupType = (int) vecbiNewData.Separate(4);
+//	/* Data group type */
+//	const int iDataGroupType = (int) vecbiNewData.Separate(4);
 
-	/* Continuity index (not yet used) */
-	vecbiNewData.Separate(4);
+//	/* Continuity index (not yet used) */
+//	vecbiNewData.Separate(4);
 
-	/* Repetition index (not yet used) */
-	vecbiNewData.Separate(4);
+//	/* Repetition index (not yet used) */
+//	vecbiNewData.Separate(4);
 
-	/* Extension field (not used) */
-	if (biExtensionFlag == true)
-		vecbiNewData.Separate(16);
+//	/* Extension field (not used) */
+//	if (biExtensionFlag == true)
+//		vecbiNewData.Separate(16);
 
-	/* Session header ------------------------------------------------------- */
-	/* Segment field */
-	if (biSegmentFlag == true)
-	{
-		/* Last */
-		biLastFlag = (_BINARY) vecbiNewData.Separate(1);
+//	/* Session header ------------------------------------------------------- */
+//	/* Segment field */
+//	if (biSegmentFlag == true)
+//	{
+//		/* Last */
+//		biLastFlag = (_BINARY) vecbiNewData.Separate(1);
 
-		/* Segment number */
-		iSegmentNum = (int) vecbiNewData.Separate(15);
-	}
-	else
-	{
-		biLastFlag = 0;
-		iSegmentNum = 0;
-	}
+//		/* Segment number */
+//		iSegmentNum = (int) vecbiNewData.Separate(15);
+//	}
+//	else
+//	{
+//		biLastFlag = 0;
+//		iSegmentNum = 0;
+//	}
 
-	/* User access field */
-	if (biUserAccFlag == true)
-	{
-		/* Rfa (Reserved for future addition) */
-		vecbiNewData.Separate(3);
+//	/* User access field */
+//	if (biUserAccFlag == true)
+//	{
+//		/* Rfa (Reserved for future addition) */
+//		vecbiNewData.Separate(3);
 
-		/* Transport Id flag */
-    btxTransportIDFlag = (_BINARY) vecbiNewData.Separate(1);
+//		/* Transport Id flag */
+//    btxTransportIDFlag = (_BINARY) vecbiNewData.Separate(1);
 
-		/* Length indicator */
-		iLenIndicat = (int) vecbiNewData.Separate(4);
+//		/* Length indicator */
+//		iLenIndicat = (int) vecbiNewData.Separate(4);
 
-		/* Transport Id */
-    if (btxTransportIDFlag == 1)
-			TransportID = (int) vecbiNewData.Separate(16);
+//		/* Transport Id */
+//    if (btxTransportIDFlag == 1)
+//			TransportID = (int) vecbiNewData.Separate(16);
 
-		/* End user address field (not used) */
-		int iLenEndUserAddress;
+//		/* End user address field (not used) */
+//		int iLenEndUserAddress;
 
-    if (btxTransportIDFlag == 1)
-			iLenEndUserAddress = (iLenIndicat - 2) * SIZEOF__BYTE;
-		else
-			iLenEndUserAddress = iLenIndicat * SIZEOF__BYTE;
+//    if (btxTransportIDFlag == 1)
+//			iLenEndUserAddress = (iLenIndicat - 2) * SIZEOF__BYTE;
+//		else
+//			iLenEndUserAddress = iLenIndicat * SIZEOF__BYTE;
 
-		vecbiNewData.Separate(iLenEndUserAddress);
-	}
-	//cerr << "MOT: new data unit, tid " << TransportID << " CRC " << bCRCOk << " DG" << iDataGroupType << endl;
+//		vecbiNewData.Separate(iLenEndUserAddress);
+//	}
+//	//cerr << "MOT: new data unit, tid " << TransportID << " CRC " << bCRCOk << " DG" << iDataGroupType << endl;
 
-	/* MSC data group data field -------------------------------------------- */
-	/* If CRC is not used enter if-block, if CRC flag is used, it must be ok to
-	   enter the if-block */
-	if ((biCRCFlag == false) || ((biCRCFlag == true) && (bCRCOk == true)))
-	{
-		/* Segmentation header ---------------------------------------------- */
-		/* Repetition count (not used) */
-		int repetition_count = vecbiNewData.Separate(3);
+//	/* MSC data group data field -------------------------------------------- */
+//	/* If CRC is not used enter if-block, if CRC flag is used, it must be ok to
+//	   enter the if-block */
+//	if ((biCRCFlag == false) || ((biCRCFlag == true) && (bCRCOk == true)))
+//	{
+//		/* Segmentation header ---------------------------------------------- */
+//		/* Repetition count (not used) */
+//		int repetition_count = vecbiNewData.Separate(3);
 
-		(void)repetition_count; /* silence warnings */
+//		(void)repetition_count; /* silence warnings */
 
-		/* Segment size */
-		iSegmentSize = (int) vecbiNewData.Separate(13);
+//		/* Segment size */
+//		iSegmentSize = (int) vecbiNewData.Separate(13);
 
-		/* Get MOT data ----------------------------------------------------- */
-		/* Segment number and user access data is needed */
-		if ((biSegmentFlag == true) && (biUserAccFlag == true) &&
-      (btxTransportIDFlag == 1))
-		{
-			/* don't make any assumptions about the order or interleaving of
-			   Data Groups from the same or different objects.
-			 */
+//		/* Get MOT data ----------------------------------------------------- */
+//		/* Segment number and user access data is needed */
+//		if ((biSegmentFlag == true) && (biUserAccFlag == true) &&
+//      (btxTransportIDFlag == 1))
+//		{
+//			/* don't make any assumptions about the order or interleaving of
+//			   Data Groups from the same or different objects.
+//			 */
 
-			/* Distinguish between header and body */
-			if (iDataGroupType == 3)
-			{
-				/* Header information, i.e. the header core and the header
-				   extension, are transferred in Data Group type 3 */
+//			/* Distinguish between header and body */
+//			if (iDataGroupType == 3)
+//			{
+//				/* Header information, i.e. the header core and the header
+//				   extension, are transferred in Data Group type 3 */
 
-				if (MOTmode != headerMode)
-				{
-					/* mode change, throw away any directory */
-					MOTDirectory.Reset();
-					//cout << "Reset " << MOTDirectory << endl;
-				}
-				MOTmode = headerMode;
+//				if (MOTmode != headerMode)
+//				{
+//					/* mode change, throw away any directory */
+//					MOTDirectory.Reset();
+//					//cout << "Reset " << MOTDirectory << endl;
+//				}
+//				MOTmode = headerMode;
 
-				/* in theory, there can be only one header at a time, but
-				   lets be a bit more tolerant
-				 */
-				if (MOTHeaders.count(TransportID) == 0)
-				{
-					CBitReassembler o;
-					MOTHeaders[TransportID] = o;
-				}
-				CBitReassembler & o = MOTHeaders[TransportID];
-				o.AddSegment(vecbiNewData, iSegmentSize, iSegmentNum,
-							 biLastFlag);
-				/* if the header just got complete, see if the body is complete */
-				if (o.Ready())
-				{
-					MOTCarousel[TransportID].AddHeader(o.vecData);
-					DeliverIfReady(TransportID);
-				}
-			}
-			else if (iDataGroupType == 4)
-			{
-				/* Body data segments are transferred in Data Group type 4 */
+//				/* in theory, there can be only one header at a time, but
+//				   lets be a bit more tolerant
+//				 */
+//				if (MOTHeaders.count(TransportID) == 0)
+//				{
+//					CBitReassembler o;
+//					MOTHeaders[TransportID] = o;
+//				}
+//				CBitReassembler & o = MOTHeaders[TransportID];
+//				o.AddSegment(vecbiNewData, iSegmentSize, iSegmentNum,
+//							 biLastFlag);
+//				/* if the header just got complete, see if the body is complete */
+//				if (o.Ready())
+//				{
+//					MOTCarousel[TransportID].AddHeader(o.vecData);
+//					DeliverIfReady(TransportID);
+//				}
+//			}
+//			else if (iDataGroupType == 4)
+//			{
+//				/* Body data segments are transferred in Data Group type 4 */
 
-				/* don't worry about modes, just store everything in the carousel
-				   defer decisions until the object and either header or directory
-				   are complete
-				 */
-				map < TTransportID, CMOTObject >::iterator o =
-					MOTCarousel.find(TransportID);
+//				/* don't worry about modes, just store everything in the carousel
+//				   defer decisions until the object and either header or directory
+//				   are complete
+//				 */
+//				map < TTransportID, CMOTObject >::iterator o =
+//					MOTCarousel.find(TransportID);
 
-				if (o == MOTCarousel.end())
-				{
-					/* we never saw this before */
-					MOTCarousel[TransportID].TransportID = TransportID;
-					o = MOTCarousel.find(TransportID);
-				}
-				/* is this an old object we have completed? */
-				if (o->second.bComplete == false)
-				{
-					o->second.Body.AddSegment(vecbiNewData, iSegmentSize,
-											  iSegmentNum, biLastFlag);
-				}
-				else
-				{
-					/* discard the segment */
-					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
-				}
+//				if (o == MOTCarousel.end())
+//				{
+//					/* we never saw this before */
+//					MOTCarousel[TransportID].TransportID = TransportID;
+//					o = MOTCarousel.find(TransportID);
+//				}
+//				/* is this an old object we have completed? */
+//				if (o->second.bComplete == false)
+//				{
+//					o->second.Body.AddSegment(vecbiNewData, iSegmentSize,
+//											  iSegmentNum, biLastFlag);
+//				}
+//				else
+//				{
+//					/* discard the segment */
+//					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
+//				}
 
-				/* if the body just got complete we can see if its ready to deliver */
-				DeliverIfReady(TransportID);
-			}
-			else if (iDataGroupType == 6)	/* MOT directory */
-			{
-				//cout << "DG6" << endl;
-				if (MOTmode != directoryMode)
-				{
-					/* mode change, throw away any headers */
-					MOTHeaders.clear();
-					MOTDirectory.TransportID = -1;	/* forced reset */
-					MOTmode = directoryMode;
-					//cout << "Reset " << MOTDirectory << endl;
-				}
+//				/* if the body just got complete we can see if its ready to deliver */
+//				DeliverIfReady(TransportID);
+//			}
+//			else if (iDataGroupType == 6)	/* MOT directory */
+//			{
+//				//cout << "DG6" << endl;
+//				if (MOTmode != directoryMode)
+//				{
+//					/* mode change, throw away any headers */
+//					MOTHeaders.clear();
+//					MOTDirectory.TransportID = -1;	/* forced reset */
+//					MOTmode = directoryMode;
+//					//cout << "Reset " << MOTDirectory << endl;
+//				}
 
-				/* The carousel is changing */
-				if (MOTDirectory.TransportID != TransportID)
-				{
-					/* we never got all the previous directory */
-					cout << " we never got all the previous directory " << TransportID << ", " << MOTDirectory.  TransportID << endl;
-					MOTDirectory.Reset();
-					MOTDirectory.TransportID = TransportID;
-					MOTDirectoryEntity.Reset();
-					MOTDirComprEntity.Reset();
-				}
+//				/* The carousel is changing */
+//				if (MOTDirectory.TransportID != TransportID)
+//				{
+//					/* we never got all the previous directory */
+//					cout << " we never got all the previous directory " << TransportID << ", " << MOTDirectory.  TransportID << endl;
+//					MOTDirectory.Reset();
+//					MOTDirectory.TransportID = TransportID;
+//					MOTDirectoryEntity.Reset();
+//					MOTDirComprEntity.Reset();
+//				}
 
-				if ((MOTDirectory.TransportID != TransportID) ||
-					((MOTDirectory.TransportID == TransportID)
-						&& (!MOTDirectoryEntity.Ready())))
-				{
+//				if ((MOTDirectory.TransportID != TransportID) ||
+//					((MOTDirectory.TransportID == TransportID)
+//						&& (!MOTDirectoryEntity.Ready())))
+//				{
 
-					/* Handle the new segment */
+//					/* Handle the new segment */
 
-					/* rely on the Add routine to check duplicates, set ready, etc. */
-					MOTDirectoryEntity.AddSegment(vecbiNewData,
-												  iSegmentSize,
-												  iSegmentNum, biLastFlag);
-					/* have we got the full directory ? */
-					if (MOTDirectoryEntity.Ready())
-					{
-						//cout << "Ready " << MOTDirectory << endl;
-						ProcessDirectory(MOTDirectoryEntity);
-						MOTDirectory.TransportID = TransportID;
-					}			/* END IF HAVE ALL OF THE NEW DIRECTORY */
-				}
-				else
-				{
-					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
-				}
-			}					/* of DG type 6 */
-#if 0							//Commented until we can test it with a real compressed directory
-			else if (iDataGroupType == 7)	/* MOT directory compressed */
-			{
-				if (MOTmode != directoryMode)
-				{
-					/* mode change, throw away any headers */
-					MOTHeaders.clear();
-					MOTDirectory.TransportID = -1;	/* forced reset */
-					MOTmode = directoryMode;
-				}
+//					/* rely on the Add routine to check duplicates, set ready, etc. */
+//					MOTDirectoryEntity.AddSegment(vecbiNewData,
+//												  iSegmentSize,
+//												  iSegmentNum, biLastFlag);
+//					/* have we got the full directory ? */
+//					if (MOTDirectoryEntity.Ready())
+//					{
+//						//cout << "Ready " << MOTDirectory << endl;
+//						ProcessDirectory(MOTDirectoryEntity);
+//						MOTDirectory.TransportID = TransportID;
+//					}			/* END IF HAVE ALL OF THE NEW DIRECTORY */
+//				}
+//				else
+//				{
+//					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
+//				}
+//			}					/* of DG type 6 */
+//#if 0							//Commented until we can test it with a real compressed directory
+//			else if (iDataGroupType == 7)	/* MOT directory compressed */
+//			{
+//				if (MOTmode != directoryMode)
+//				{
+//					/* mode change, throw away any headers */
+//					MOTHeaders.clear();
+//					MOTDirectory.TransportID = -1;	/* forced reset */
+//					MOTmode = directoryMode;
+//				}
 
-				/* The carousel is changing */
-				if (MOTDirectory.TransportID != TransportID)
-				{
-					/* we never got all the previous directory */
-					MOTDirectory.Reset();
-					MOTDirectory.TransportID = TransportID;
-					MOTDirectoryEntity.Reset();
-					MOTDirComprEntity.Reset();
-				}
+//				/* The carousel is changing */
+//				if (MOTDirectory.TransportID != TransportID)
+//				{
+//					/* we never got all the previous directory */
+//					MOTDirectory.Reset();
+//					MOTDirectory.TransportID = TransportID;
+//					MOTDirectoryEntity.Reset();
+//					MOTDirComprEntity.Reset();
+//				}
 
-				if ((MOTDirectory.TransportID != TransportID) ||
-					((MOTDirectory.TransportID == TransportID)
-						&& (!MOTDirComprEntity.Ready())))
-				{
-					/* Handle the new segment */
+//				if ((MOTDirectory.TransportID != TransportID) ||
+//					((MOTDirectory.TransportID == TransportID)
+//						&& (!MOTDirComprEntity.Ready())))
+//				{
+//					/* Handle the new segment */
 
-					/* rely on the Add routine to check duplicates, set ready, etc. */
-					MOTDirComprEntity.AddSegment(vecbiNewData,
-												 iSegmentSize,
-												 iSegmentNum, biLastFlag);
-					/* have we got the full directory ? */
-					if (MOTDirComprEntity.Ready())
-					{
-						/* uncompress data and extract directory */
+//					/* rely on the Add routine to check duplicates, set ready, etc. */
+//					MOTDirComprEntity.AddSegment(vecbiNewData,
+//												 iSegmentSize,
+//												 iSegmentNum, biLastFlag);
+//					/* have we got the full directory ? */
+//					if (MOTDirComprEntity.Ready())
+//					{
+//						/* uncompress data and extract directory */
 
-						/* Compression Flag - must be 1 */
+//						/* Compression Flag - must be 1 */
 
-						const _BOOLEAN bCompressionFlag =
-							MOTDirComprEntity.vecData.
-							Separate(1) ? true : false;
+//						const _BOOLEAN bCompressionFlag =
+//							MOTDirComprEntity.vecData.
+//							Separate(1) ? true : false;
 
-						/* rfu */
-						MOTDirComprEntity.vecData.Separate(1);
+//						/* rfu */
+//						MOTDirComprEntity.vecData.Separate(1);
 
-						/* EntitySize */
-						MOTDirComprEntity.vecData.Separate(30);
+//						/* EntitySize */
+//						MOTDirComprEntity.vecData.Separate(30);
 
-						/* CompressionID */
-						MOTDirComprEntity.vecData.Separate(8);
+//						/* CompressionID */
+//						MOTDirComprEntity.vecData.Separate(8);
 
-						/* rfu */
-						MOTDirComprEntity.vecData.Separate(2);
+//						/* rfu */
+//						MOTDirComprEntity.vecData.Separate(2);
 
-						/* Uncompressed DataLength */
-						MOTDirComprEntity.vecData.Separate(30);
+//						/* Uncompressed DataLength */
+//						MOTDirComprEntity.vecData.Separate(30);
 
-						CBitReassembler MOTDirectoryData;
+//						CBitReassembler MOTDirectoryData;
 
-						MOTDirectoryData.vecData =
-							MOTDirComprEntity.vecData.
-							Separate(MOTDirComprEntity.vecData.Size() -
-									 (9 * SIZEOF__BYTE));
+//						MOTDirectoryData.vecData =
+//							MOTDirComprEntity.vecData.
+//							Separate(MOTDirComprEntity.vecData.Size() -
+//									 (9 * SIZEOF__BYTE));
 
-						if (bCompressionFlag
-							&& MOTDirectoryData.IsZipped()
-							&& MOTDirectoryData.uncompress())
-						{
-							ProcessDirectory(MOTDirectoryData);
+//						if (bCompressionFlag
+//							&& MOTDirectoryData.IsZipped()
+//							&& MOTDirectoryData.uncompress())
+//						{
+//							ProcessDirectory(MOTDirectoryData);
 
-							MOTDirectory.TransportID = TransportID;
-						}
-						else
-						{
-							/* reset */
-							MOTDirComprEntity.Reset();
-						}
+//							MOTDirectory.TransportID = TransportID;
+//						}
+//						else
+//						{
+//							/* reset */
+//							MOTDirComprEntity.Reset();
+//						}
 
-					}			/* END IF HAVE ALL OF THE NEW DIRECTORY */
-				}
-				else
-				{
-					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
-				}
-			}					/* of DG type 7 */
-#endif
-			else
-			{
-				vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
-			}
-		}
-	}
-}
+//					}			/* END IF HAVE ALL OF THE NEW DIRECTORY */
+//				}
+//				else
+//				{
+//					vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
+//				}
+//			}					/* of DG type 7 */
+//#endif
+//			else
+//			{
+//				vecbiNewData.Separate(iSegmentSize * SIZEOF__BYTE);
+//			}
+//		}
+//	}
+//}
 
-void
-CMOTDABDec::ProcessDirectory(CBitReassembler & MOTDir)
-{
-	MOTDirectory.AddHeader(MOTDir.vecData);
+//void
+//CMOTDABDec::ProcessDirectory(CBitReassembler & MOTDir)
+//{
+//	MOTDirectory.AddHeader(MOTDir.vecData);
 
-	/* first reset the "I'm in the carousel" flag for all objects
-	   and set the "I was in the carousel for the relevant objects
-	   then set the "I'm in the carousel" flag for all objects in the
-	   new directory.
-	   Then delete the objects from the carousel that need deleting
-	   leave objects alone that were never in a carousel, they might
-	   become valid later. */
+//	/* first reset the "I'm in the carousel" flag for all objects
+//	   and set the "I was in the carousel for the relevant objects
+//	   then set the "I'm in the carousel" flag for all objects in the
+//	   new directory.
+//	   Then delete the objects from the carousel that need deleting
+//	   leave objects alone that were never in a carousel, they might
+//	   become valid later. */
 
-	/* save bodies of old carousel */
-	map < TTransportID, CByteReassembler > Body;
-	for (map < TTransportID,
-		 CMOTObject >::iterator m =
-		 MOTCarousel.begin(); m != MOTCarousel.end(); m++)
-	{
-		Body[m->first] = m->second.Body;
-	}
-	MOTCarousel.erase(MOTCarousel.begin(), MOTCarousel.end());
+//	/* save bodies of old carousel */
+//	map < TTransportID, CByteReassembler > Body;
+//	for (map < TTransportID,
+//		 CMOTObject >::iterator m =
+//		 MOTCarousel.begin(); m != MOTCarousel.end(); m++)
+//	{
+//		Body[m->first] = m->second.Body;
+//	}
+//	MOTCarousel.erase(MOTCarousel.begin(), MOTCarousel.end());
 
-	//cout << "decode directory " << MOTDirectory.  iNumberOfObjects << " === " << MOTDirectory.vecObjects.size() << " {";
+//	//cout << "decode directory " << MOTDirectory.  iNumberOfObjects << " === " << MOTDirectory.vecObjects.size() << " {";
 
-	MOTDirectory.vecObjects.clear();
+//	MOTDirectory.vecObjects.clear();
 
-	for (size_t i = 0; i < size_t(MOTDirectory.iNumberOfObjects); i++)
-	{
-		/* add each header to the carousel */
-		TTransportID tid = (TTransportID) MOTDir.vecData.Separate(16);
-		MOTCarousel[tid].AddHeader(MOTDir.vecData);
-		/* keep any bodies or body fragments previously received */
-		map < TTransportID, CByteReassembler >::iterator b = Body.find(tid);
-		if (b != Body.end())
-			MOTCarousel[tid].Body = b->second;
-		/* mark objects which are in the new directory */
-		MOTDirectory.vecObjects.push_back(tid);
-		//cout << tid << " ";
-		DeliverIfReady(tid);
-	}
-	//cout << "}" << endl;
+//	for (size_t i = 0; i < size_t(MOTDirectory.iNumberOfObjects); i++)
+//	{
+//		/* add each header to the carousel */
+//		TTransportID tid = (TTransportID) MOTDir.vecData.Separate(16);
+//		MOTCarousel[tid].AddHeader(MOTDir.vecData);
+//		/* keep any bodies or body fragments previously received */
+//		map < TTransportID, CByteReassembler >::iterator b = Body.find(tid);
+//		if (b != Body.end())
+//			MOTCarousel[tid].Body = b->second;
+//		/* mark objects which are in the new directory */
+//		MOTDirectory.vecObjects.push_back(tid);
+//		//cout << tid << " ";
+//		DeliverIfReady(tid);
+//	}
+//	//cout << "}" << endl;
 
-}
+//}
 
 void
 CDateAndTime::extract_absolute(CVector < _BINARY > &vecbiData)
@@ -1506,419 +1506,419 @@ CMOTObjectBase::extractString(CVector < _BINARY > &vecbiData, int iLen) const
 	return strVar;
 }
 
-void
-CMOTDirectory::Reset ()
-{
-    CMOTObjectBase::Reset ();
-    bSortedHeaderInformation = false;
-    DirectoryIndex.clear ();
-    bCompressionFlag = false;
-    iCarouselPeriod = -1;
-    iNumberOfObjects = 0;
-    iSegmentSize = 0;
-}
+//void
+//CMOTDirectory::Reset ()
+//{
+//    CMOTObjectBase::Reset ();
+//    bSortedHeaderInformation = false;
+//    DirectoryIndex.clear ();
+//    bCompressionFlag = false;
+//    iCarouselPeriod = -1;
+//    iNumberOfObjects = 0;
+//    iSegmentSize = 0;
+//}
 
 
-void
-CMOTDirectory::AddHeader(CVector < _BINARY > &vecbiHeader)
-{
-//	int iDirectorySize;
+//void
+//CMOTDirectory::AddHeader(CVector < _BINARY > &vecbiHeader)
+//{
+////	int iDirectorySize;
 
-	/* compression flag - must be zero */
-	bCompressionFlag = vecbiHeader.Separate(1) ? true : false;
+//	/* compression flag - must be zero */
+//	bCompressionFlag = vecbiHeader.Separate(1) ? true : false;
 
-	/* rfu */
-	vecbiHeader.Separate(1);
+//	/* rfu */
+//	vecbiHeader.Separate(1);
 
-	/* Directory size: not used */
-//	iDirectorySize = (int) vecbiHeader.Separate(30);
+//	/* Directory size: not used */
+////	iDirectorySize = (int) vecbiHeader.Separate(30);
 
-	/* Number of objects */
-	iNumberOfObjects = (int) vecbiHeader.Separate(16);
+//	/* Number of objects */
+//	iNumberOfObjects = (int) vecbiHeader.Separate(16);
 
-	/* Carousel period */
-	iCarouselPeriod = (int) vecbiHeader.Separate(24);
+//	/* Carousel period */
+//	iCarouselPeriod = (int) vecbiHeader.Separate(24);
 
-	/*  rfu */
-	vecbiHeader.Separate(1);
+//	/*  rfu */
+//	vecbiHeader.Separate(1);
 
-	/* Rfa: not used */
-	vecbiHeader.Separate(2);
+//	/* Rfa: not used */
+//	vecbiHeader.Separate(2);
 
-	/* Segment size: not used */
-	iSegmentSize = (int) vecbiHeader.Separate(13);
-	/* Directory extension length */
-	int iDirectoryExtensionLength = (int) vecbiHeader.Separate(16);
+//	/* Segment size: not used */
+//	iSegmentSize = (int) vecbiHeader.Separate(13);
+//	/* Directory extension length */
+//	int iDirectoryExtensionLength = (int) vecbiHeader.Separate(16);
 
-	/* Use all header extension data blocks */
-	int iSizeRec = iDirectoryExtensionLength;
+//	/* Use all header extension data blocks */
+//	int iSizeRec = iDirectoryExtensionLength;
 
-	/* Use all header extension data blocks */
-	while (iSizeRec > 0)
-	{
-		_BYTE bParamId;
-		int iHdrFieldLen, iDataFieldLen, iTmp;
+//	/* Use all header extension data blocks */
+//	while (iSizeRec > 0)
+//	{
+//		_BYTE bParamId;
+//		int iHdrFieldLen, iDataFieldLen, iTmp;
 
-		decodeExtHeader(bParamId, iHdrFieldLen, iDataFieldLen, vecbiHeader);
+//		decodeExtHeader(bParamId, iHdrFieldLen, iDataFieldLen, vecbiHeader);
 
-		iSizeRec -= (iHdrFieldLen + iDataFieldLen);
+//		iSizeRec -= (iHdrFieldLen + iDataFieldLen);
 
-		switch (bParamId)
-		{
-		case 0:				/* SortedHeaderInformation */
-			bSortedHeaderInformation = true;
-			break;
-		case 1:				/* DefaultPermitOutdatedVersions */
-			iTmp = (int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			if (iTmp == 0)
-				bPermitOutdatedVersions = false;
-			else
-				bPermitOutdatedVersions = true;
-			break;
-		case 9:				/* DefaultExpiration */
-			if (iDataFieldLen == 1)
-			{
-				/* relative */
-				ExpireTime.extract_relative(vecbiHeader);
-			}
-			else
-			{
-				/* absolute */
-				ExpireTime.extract_absolute(vecbiHeader);
-			}
-			break;
-		case 34:				/* DirectoryIndex */
-		{
-			_BYTE iProfile = (_BYTE) vecbiHeader.Separate(SIZEOF__BYTE);
-			DirectoryIndex[iProfile] =
-				extractString(vecbiHeader, iDataFieldLen - 1);
-		}
-			break;
-		default:
-			if (iDataFieldLen > 0)
-				vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		}
-	}
-}
+//		switch (bParamId)
+//		{
+//		case 0:				/* SortedHeaderInformation */
+//			bSortedHeaderInformation = true;
+//			break;
+//		case 1:				/* DefaultPermitOutdatedVersions */
+//			iTmp = (int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			if (iTmp == 0)
+//				bPermitOutdatedVersions = false;
+//			else
+//				bPermitOutdatedVersions = true;
+//			break;
+//		case 9:				/* DefaultExpiration */
+//			if (iDataFieldLen == 1)
+//			{
+//				/* relative */
+//				ExpireTime.extract_relative(vecbiHeader);
+//			}
+//			else
+//			{
+//				/* absolute */
+//				ExpireTime.extract_absolute(vecbiHeader);
+//			}
+//			break;
+//		case 34:				/* DirectoryIndex */
+//		{
+//			_BYTE iProfile = (_BYTE) vecbiHeader.Separate(SIZEOF__BYTE);
+//			DirectoryIndex[iProfile] =
+//				extractString(vecbiHeader, iDataFieldLen - 1);
+//		}
+//			break;
+//		default:
+//			if (iDataFieldLen > 0)
+//				vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		}
+//	}
+//}
 
-_BOOLEAN
-CReassembler::IsZipped() const
-{
-/*
-	Check if the header file is a gzip header
+//_BOOLEAN
+//CReassembler::IsZipped() const
+//{
+///*
+//	Check if the header file is a gzip header
 
-	see GZIP file format specification
-	http://www.ietf.org/rfc/rfc1952.txt
-*/
-	if(vecData.Size()<3)
-		return false;
-	/* Check for gzip header [31, 139, 8] */
-	if ((vecData[0] == 31) && (vecData[1] == 139) && (vecData[2] == 8))
-		return true;
-	else
-		return false;
-}
+//	see GZIP file format specification
+//	http://www.ietf.org/rfc/rfc1952.txt
+//*/
+//	if(vecData.Size()<3)
+//		return false;
+//	/* Check for gzip header [31, 139, 8] */
+//	if ((vecData[0] == 31) && (vecData[1] == 139) && (vecData[2] == 8))
+//		return true;
+//	else
+//		return false;
+//}
 
-unsigned int
-CReassembler::gzGetOriginalSize() const
-{
-/*
-	Get the original size from a gzip file
-	last 4 bytes contains the original file size (ISIZE)
+//unsigned int
+//CReassembler::gzGetOriginalSize() const
+//{
+///*
+//	Get the original size from a gzip file
+//	last 4 bytes contains the original file size (ISIZE)
 
-	see GZIP file format specification
-	http://www.ietf.org/rfc/rfc1952.txt
-*/
-	CVector < _BYTE > byHeader(4);
+//	see GZIP file format specification
+//	http://www.ietf.org/rfc/rfc1952.txt
+//*/
+//	CVector < _BYTE > byHeader(4);
 
-	const int iLastByte = vecData.Size() - 1;
+//	const int iLastByte = vecData.Size() - 1;
 
-	byHeader[0] = vecData[iLastByte - 3];
-	byHeader[1] = vecData[iLastByte - 2];
-	byHeader[2] = vecData[iLastByte - 1];
-	byHeader[3] = vecData[iLastByte];
+//	byHeader[0] = vecData[iLastByte - 3];
+//	byHeader[1] = vecData[iLastByte - 2];
+//	byHeader[2] = vecData[iLastByte - 1];
+//	byHeader[3] = vecData[iLastByte];
 
-	return byHeader[0] + (byHeader[1] << 8) + (byHeader[2] << 16) +
-		(byHeader[3] << 24);
-}
+//	return byHeader[0] + (byHeader[1] << 8) + (byHeader[2] << 16) +
+//		(byHeader[3] << 24);
+//}
 
-_BOOLEAN
-CReassembler::uncompress()
-{
-#if HAVE_LIBZ
-	CVector < _BYTE > vecbRawDataOut;
-	/* Extract the original file size */
-	unsigned long dest_len = gzGetOriginalSize();
+//_BOOLEAN
+//CReassembler::uncompress()
+//{
+//#if HAVE_LIBZ
+//	CVector < _BYTE > vecbRawDataOut;
+//	/* Extract the original file size */
+//	unsigned long dest_len = gzGetOriginalSize();
 
-	if (dest_len < MAX_DEC_NUM_BYTES_ZIP_DATA)
-	{
-		vecbRawDataOut.Init(dest_len);
+//	if (dest_len < MAX_DEC_NUM_BYTES_ZIP_DATA)
+//	{
+//		vecbRawDataOut.Init(dest_len);
 
-		int zerr;
-		z_stream stream;
-		memset(&stream, 0, sizeof(stream));
-		if ((zerr = inflateInit2(&stream, -MAX_WBITS)) != Z_OK)
-			return false;
+//		int zerr;
+//		z_stream stream;
+//		memset(&stream, 0, sizeof(stream));
+//		if ((zerr = inflateInit2(&stream, -MAX_WBITS)) != Z_OK)
+//			return false;
 
-		/* skip past minimal gzip header */
-		stream.next_in = &vecData[10];
-		stream.avail_in = vecData.Size() - 10;
+//		/* skip past minimal gzip header */
+//		stream.next_in = &vecData[10];
+//		stream.avail_in = vecData.Size() - 10;
 
-		stream.next_out = &vecbRawDataOut[0];
-		stream.avail_out = vecbRawDataOut.Size();
+//		stream.next_out = &vecbRawDataOut[0];
+//		stream.avail_out = vecbRawDataOut.Size();
 
-		zerr = inflate(&stream, Z_NO_FLUSH);
-		dest_len = vecbRawDataOut.Size() - stream.avail_out;
+//		zerr = inflate(&stream, Z_NO_FLUSH);
+//		dest_len = vecbRawDataOut.Size() - stream.avail_out;
 
-		if (zerr != Z_OK && zerr != Z_STREAM_END)
-			return false;
+//		if (zerr != Z_OK && zerr != Z_STREAM_END)
+//			return false;
 
-		inflateEnd(&stream);
+//		inflateEnd(&stream);
 
-		if (zerr != Z_OK && zerr != Z_STREAM_END)
-			return false;
+//		if (zerr != Z_OK && zerr != Z_STREAM_END)
+//			return false;
 
-		vecData.Init(dest_len);
-		vecData = vecbRawDataOut;
-		return true;
-	}
-	else
-	{
-		vecData.Init(0);
-		return false;
-	}
-#else
-#	ifdef HAVE_LIBFREEIMAGE
-	CVector < _BYTE > vecbRawDataOut;
-	CVector < _BYTE > &vecbRawDataIn = vecData;
-	/* Extract the original file size */
-	const unsigned long dest_len = gzGetOriginalSize();
+//		vecData.Init(dest_len);
+//		vecData = vecbRawDataOut;
+//		return true;
+//	}
+//	else
+//	{
+//		vecData.Init(0);
+//		return false;
+//	}
+//#else
+//#	ifdef HAVE_LIBFREEIMAGE
+//	CVector < _BYTE > vecbRawDataOut;
+//	CVector < _BYTE > &vecbRawDataIn = vecData;
+//	/* Extract the original file size */
+//	const unsigned long dest_len = gzGetOriginalSize();
 
-	if (dest_len < MAX_DEC_NUM_BYTES_ZIP_DATA)
-	{
-		vecbRawDataOut.Init(dest_len);
+//	if (dest_len < MAX_DEC_NUM_BYTES_ZIP_DATA)
+//	{
+//		vecbRawDataOut.Init(dest_len);
 
-		/* Actual decompression call */
-		const int zerr = FreeImage_ZLibGUnzip(&vecbRawDataOut[0],
-											  dest_len, &vecbRawDataIn[0],
-											  vecbRawDataIn.Size());
+//		/* Actual decompression call */
+//		const int zerr = FreeImage_ZLibGUnzip(&vecbRawDataOut[0],
+//											  dest_len, &vecbRawDataIn[0],
+//											  vecbRawDataIn.Size());
 
-		if (zerr > 0)
-		{
-			/* Copy data */
-			vecData.Init(zerr);
-			vecData = vecbRawDataOut;
-			return true;
-		}
-		else
-		{
-			vecData.Init(0);
-			return false;
-		}
-	}
-	else
-	{
-		vecData.Init(0);
-		return false;
-	}
-#	else
-	return false;
-#	endif
-#endif
-}
+//		if (zerr > 0)
+//		{
+//			/* Copy data */
+//			vecData.Init(zerr);
+//			vecData = vecbRawDataOut;
+//			return true;
+//		}
+//		else
+//		{
+//			vecData.Init(0);
+//			return false;
+//		}
+//	}
+//	else
+//	{
+//		vecData.Init(0);
+//		return false;
+//	}
+//#	else
+//	return false;
+//#	endif
+//#endif
+//}
 
-static const char *txt[] = { "txt", "txt", "html", 0 };
-static const char *img[] = { "gif", "jpeg", "bmp", "png", 0 };
-static const char *audio[] = { "mpg", "mp2", "mp3", "mpg", "mp2", "mp3",
-	"pcm", "aiff", "atrac", "atrac2", "mp4", 0
-};
-static const char *video[] = { "mpg", "mp2", "mp4", "h263", 0 };
+//static const char *txt[] = { "txt", "txt", "html", 0 };
+//static const char *img[] = { "gif", "jpeg", "bmp", "png", 0 };
+//static const char *audio[] = { "mpg", "mp2", "mp3", "mpg", "mp2", "mp3",
+//	"pcm", "aiff", "atrac", "atrac2", "mp4", 0
+//};
+//static const char *video[] = { "mpg", "mp2", "mp4", "h263", 0 };
 
-void
-CMOTObject::AddHeader(CVector < _BINARY > &vecbiHeader)
-{
+//void
+//CMOTObject::AddHeader(CVector < _BINARY > &vecbiHeader)
+//{
 
-	/* HeaderSize and BodySize */
-	iBodySize = (int) vecbiHeader.Separate(28);
-	size_t iHeaderSize = (size_t) vecbiHeader.Separate(13);
+//	/* HeaderSize and BodySize */
+//	iBodySize = (int) vecbiHeader.Separate(28);
+//	size_t iHeaderSize = (size_t) vecbiHeader.Separate(13);
 
-	/* Content type and content sub-type */
-	iContentType = (int) vecbiHeader.Separate(6);
-	iContentSubType = (int) vecbiHeader.Separate(9);
-	/* 7 bytes for header core */
-	int iSizeRec = iHeaderSize - 7;
+//	/* Content type and content sub-type */
+//	iContentType = (int) vecbiHeader.Separate(6);
+//	iContentSubType = (int) vecbiHeader.Separate(9);
+//	/* 7 bytes for header core */
+//	int iSizeRec = iHeaderSize - 7;
 
-	/* Use all header extension data blocks */
-	while (iSizeRec > 0)
-	{
-		_BYTE bParamId;
-		int iHdrFieldLen, iDataFieldLen, iTmp;
+//	/* Use all header extension data blocks */
+//	while (iSizeRec > 0)
+//	{
+//		_BYTE bParamId;
+//		int iHdrFieldLen, iDataFieldLen, iTmp;
 
-		decodeExtHeader(bParamId, iHdrFieldLen, iDataFieldLen, vecbiHeader);
+//		decodeExtHeader(bParamId, iHdrFieldLen, iDataFieldLen, vecbiHeader);
 
-		iSizeRec -= (iHdrFieldLen + iDataFieldLen);
+//		iSizeRec -= (iHdrFieldLen + iDataFieldLen);
 
-		switch (bParamId)
-		{
-		case 1:				/* PermitOutdatedVersions */
-			iTmp = (int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			if (iTmp == 0)
-				bPermitOutdatedVersions = false;
-			else
-				bPermitOutdatedVersions = true;
-			break;
-		case 5:				/* TriggerTime - OBSOLETE */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 6:				/* Version - OBSOLETE */
-			iVersion = (int) vecbiHeader.Separate(SIZEOF__BYTE);
-			break;
-		case 7:				/* RetransmissionDistance */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 9:				/* Expiration */
-			if (iDataFieldLen == 1)
-			{
-				/* relative */
-				ExpireTime.extract_relative(vecbiHeader);
-			}
-			else
-			{
-				/* absolute */
-				ExpireTime.extract_absolute(vecbiHeader);
-			}
-			break;
-		case 10:				/* Priority */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 11:				/* Label */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 12:				/* Content Name */
-			/* TODO - convert characters to UNICODE */
-			iCharacterSetForName = vecbiHeader.Separate(4);
-			/* rfa  */
-			vecbiHeader.Separate(4);
-			strName = extractString(vecbiHeader, iDataFieldLen - 1);
-			break;
-		case 13:				/* UniqueBodyVersion */
-			iUniqueBodyVersion = (int) vecbiHeader.Separate(32);
-			break;
-		case 15:				/* Content Description */
-			iCharacterSetForDescription = vecbiHeader.Separate(4);
+//		switch (bParamId)
+//		{
+//		case 1:				/* PermitOutdatedVersions */
+//			iTmp = (int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			if (iTmp == 0)
+//				bPermitOutdatedVersions = false;
+//			else
+//				bPermitOutdatedVersions = true;
+//			break;
+//		case 5:				/* TriggerTime - OBSOLETE */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 6:				/* Version - OBSOLETE */
+//			iVersion = (int) vecbiHeader.Separate(SIZEOF__BYTE);
+//			break;
+//		case 7:				/* RetransmissionDistance */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 9:				/* Expiration */
+//			if (iDataFieldLen == 1)
+//			{
+//				/* relative */
+//				ExpireTime.extract_relative(vecbiHeader);
+//			}
+//			else
+//			{
+//				/* absolute */
+//				ExpireTime.extract_absolute(vecbiHeader);
+//			}
+//			break;
+//		case 10:				/* Priority */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 11:				/* Label */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 12:				/* Content Name */
+//			/* TODO - convert characters to UNICODE */
+//			iCharacterSetForName = vecbiHeader.Separate(4);
+//			/* rfa  */
+//			vecbiHeader.Separate(4);
+//			strName = extractString(vecbiHeader, iDataFieldLen - 1);
+//			break;
+//		case 13:				/* UniqueBodyVersion */
+//			iUniqueBodyVersion = (int) vecbiHeader.Separate(32);
+//			break;
+//		case 15:				/* Content Description */
+//			iCharacterSetForDescription = vecbiHeader.Separate(4);
 
-			/* rfa */
-			vecbiHeader.Separate(4);
+//			/* rfa */
+//			vecbiHeader.Separate(4);
 
-			strContentDescription =
-				extractString(vecbiHeader, iDataFieldLen - 1);
-			break;
-		case 16:				/* Mime Type */
-			strMimeType = extractString(vecbiHeader, iDataFieldLen);
-			break;
-		case 17:				/* Compression Type */
-			iCompressionType =
-				(int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 0x21:				/* ProfileSubset */
-		{
-			vecbProfileSubset.clear();
-			for (size_t i = 0; i < size_t(iDataFieldLen); i++)
-				vecbProfileSubset.push_back((_BYTE) vecbiHeader.
-											Separate(SIZEOF__BYTE));
-		}
-			break;
-		case 0x23:				/* CAInfo */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 0x24:				/* CAReplacementObject */
-			/* not decoded - skip */
-			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		case 0x25:				/* ScopeStart */
-			ScopeStart.extract_absolute(vecbiHeader);
-			break;
-		case 0x26:				/* ScopeEnd */
-			ScopeEnd.extract_absolute(vecbiHeader);
-			break;
-		case 0x27:				/* ScopeId */
-			iScopeId = vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		default:
-			/* not decoded - skip */
-			if (iDataFieldLen > 0)
-				(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
-			break;
-		}
-	}
-	/* set strFormat */
-	switch (iContentType)
-	{
-	case 1:
-		strFormat = txt[iContentSubType];
-		break;
-	case 2:
-		strFormat = img[iContentSubType];
-		break;
-	case 3:
-		strFormat = audio[iContentSubType];
-		break;
-	case 4:
-		strFormat = video[iContentSubType];
-		break;
-	}
-	bHasHeader = true;
-}
+//			strContentDescription =
+//				extractString(vecbiHeader, iDataFieldLen - 1);
+//			break;
+//		case 16:				/* Mime Type */
+//			strMimeType = extractString(vecbiHeader, iDataFieldLen);
+//			break;
+//		case 17:				/* Compression Type */
+//			iCompressionType =
+//				(int) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 0x21:				/* ProfileSubset */
+//		{
+//			vecbProfileSubset.clear();
+//			for (size_t i = 0; i < size_t(iDataFieldLen); i++)
+//				vecbProfileSubset.push_back((_BYTE) vecbiHeader.
+//											Separate(SIZEOF__BYTE));
+//		}
+//			break;
+//		case 0x23:				/* CAInfo */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 0x24:				/* CAReplacementObject */
+//			/* not decoded - skip */
+//			(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		case 0x25:				/* ScopeStart */
+//			ScopeStart.extract_absolute(vecbiHeader);
+//			break;
+//		case 0x26:				/* ScopeEnd */
+//			ScopeEnd.extract_absolute(vecbiHeader);
+//			break;
+//		case 0x27:				/* ScopeId */
+//			iScopeId = vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		default:
+//			/* not decoded - skip */
+//			if (iDataFieldLen > 0)
+//				(void) vecbiHeader.Separate(iDataFieldLen * SIZEOF__BYTE);
+//			break;
+//		}
+//	}
+//	/* set strFormat */
+//	switch (iContentType)
+//	{
+//	case 1:
+//		strFormat = txt[iContentSubType];
+//		break;
+//	case 2:
+//		strFormat = img[iContentSubType];
+//		break;
+//	case 3:
+//		strFormat = audio[iContentSubType];
+//		break;
+//	case 4:
+//		strFormat = video[iContentSubType];
+//		break;
+//	}
+//	bHasHeader = true;
+//}
 
-void
-CMOTObject::dump(ostream & out)
-{
-	out << "MOT(" << TransportID << "):";
-	out << " Name: " << strName;
-	out << ':' << iCharacterSetForName;
-	out << " Description: " << strContentDescription;
-	out << ':' << iCharacterSetForDescription;
-	out << " mime: " << strMimeType;
-	out << " content: " << iContentType << '/' << iContentSubType;
-	out << " UniqueBodyVersion: " << iUniqueBodyVersion;
-	out << " Expires: " << ExpireTime;
-	out << " PermitOutdatedVersions: " << bPermitOutdatedVersions;
-	out << " Scope: " << hex << iScopeId << dec << " from " << ScopeStart <<
-		" to " << ScopeEnd;
-	out << " CompressionType: " << iCompressionType;
-	out << " Version: " << iVersion;
-	out << " Priority: " << iPriority;
-	out << " RetransmissionDistance: " << iRetransmissionDistance;
-	out << " format: " << strFormat;
-	out << " length: " << iBodySize;
-}
+//void
+//CMOTObject::dump(ostream & out)
+//{
+//	out << "MOT(" << TransportID << "):";
+//	out << " Name: " << strName;
+//	out << ':' << iCharacterSetForName;
+//	out << " Description: " << strContentDescription;
+//	out << ':' << iCharacterSetForDescription;
+//	out << " mime: " << strMimeType;
+//	out << " content: " << iContentType << '/' << iContentSubType;
+//	out << " UniqueBodyVersion: " << iUniqueBodyVersion;
+//	out << " Expires: " << ExpireTime;
+//	out << " PermitOutdatedVersions: " << bPermitOutdatedVersions;
+//	out << " Scope: " << hex << iScopeId << dec << " from " << ScopeStart <<
+//		" to " << ScopeEnd;
+//	out << " CompressionType: " << iCompressionType;
+//	out << " Version: " << iVersion;
+//	out << " Priority: " << iPriority;
+//	out << " RetransmissionDistance: " << iRetransmissionDistance;
+//	out << " format: " << strFormat;
+//	out << " length: " << iBodySize;
+//}
 
-void
-CMOTDirectory::dump(ostream & out)
-{
-	out << "MOTDIR(" << TransportID << "):";
-	out << " Expires: " << ExpireTime;
-	out << " PermitOutdatedVersions: " << bPermitOutdatedVersions;
-	out << " CarouselPeriod: " << iCarouselPeriod;
-	out << " SegmentSize: " << iSegmentSize;
-	out << " CompressionFlag: " << bCompressionFlag;
-	out << " SortedHeaderInformation: " << bSortedHeaderInformation;
-	out << " indices { ";
-	for (map < _BYTE, string >::iterator di = DirectoryIndex.begin();
-		 di != DirectoryIndex.end(); di++)
-    {
-		out << hex << di->first << dec << " => " << di->second;
-		out.flush();
-    }
-	out << " }";
-	out << " there are " << iNumberOfObjects << " objects {";
-	for (size_t i = 0; i < vecObjects.size(); i++)
-		out << " " << vecObjects[i];
-	out << " }";
-}
+//void
+//CMOTDirectory::dump(ostream & out)
+//{
+//	out << "MOTDIR(" << TransportID << "):";
+//	out << " Expires: " << ExpireTime;
+//	out << " PermitOutdatedVersions: " << bPermitOutdatedVersions;
+//	out << " CarouselPeriod: " << iCarouselPeriod;
+//	out << " SegmentSize: " << iSegmentSize;
+//	out << " CompressionFlag: " << bCompressionFlag;
+//	out << " SortedHeaderInformation: " << bSortedHeaderInformation;
+//	out << " indices { ";
+//	for (map < _BYTE, string >::iterator di = DirectoryIndex.begin();
+//		 di != DirectoryIndex.end(); di++)
+//    {
+//		out << hex << di->first << dec << " => " << di->second;
+//		out.flush();
+//    }
+//	out << " }";
+//	out << " there are " << iNumberOfObjects << " objects {";
+//	for (size_t i = 0; i < vecObjects.size(); i++)
+//		out << " " << vecObjects[i];
+//	out << " }";
+//}

@@ -1,3 +1,24 @@
+/**************************************************************************
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
+*   on4qz@telenet.be                                                      *
+*   http://users.telenet.be/on4qz                                         *
+*                                                                         *
+*   This program is free software; you can redistribute it and/or modify  *
+*   it under the terms of the GNU General Public License as published by  *
+*   the Free Software Foundation; either version 2 of the License, or     *
+*   (at your option) any later version.                                   *
+*                                                                         *
+*   This program is distributed in the hope that it will be useful,       *
+*   but WITHOUT ANY WARRANTY; without even the implied warranty of        *
+*   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         *
+*   GNU General Public License for more details.                          *
+*                                                                         *
+*   You should have received a copy of the GNU General Public License     *
+*   along with this program; if not, write to the                         *
+*   Free Software Foundation, Inc.,                                       *
+*   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
+***************************************************************************/
+
 #include "guiconfig.h"
 #include "ui_guiconfig.h"
 #include <QImageWriter>
@@ -11,6 +32,8 @@ QColor backGroundColor;
 QColor imageBackGroundColor;
 bool slowCPU;
 bool lowRes;
+bool confirmDeletion;
+bool confirmClose;
 
 guiConfig::guiConfig(QWidget *parent) : baseConfig(parent),  ui(new Ui::guiConfig)
 {
@@ -32,10 +55,12 @@ void guiConfig::readSettings()
   galleryRows=qSettings.value("galleryRows",4).toInt();
   galleryColumns=qSettings.value("galleryColumns",4).toInt();
   imageStretch=qSettings.value("imageStretch",true).toBool();
-  backGroundColor=qSettings.value("backGroundColor",QColor(128,128,128)).value<QColor>();
-  imageBackGroundColor=qSettings.value("imageBackGroundColor",QColor(0,0,128)).value<QColor>();
+  backGroundColor=qSettings.value("backGroundColor",QColor(0,86,230)).value<QColor>();
+  imageBackGroundColor=qSettings.value("imageBackGroundColor",QColor(128,128,128)).value<QColor>();
   slowCPU=qSettings.value("slowCPU",false).toBool();
   lowRes=qSettings.value("lowRes",false).toBool();
+  confirmDeletion=qSettings.value("confirmDeletion",true).toBool();
+  confirmClose=qSettings.value("confirmClose",true).toBool();
   qSettings.endGroup();
   setParams();
 }
@@ -52,6 +77,10 @@ void guiConfig::writeSettings()
   qSettings.setValue("imageBackGroundColor",imageBackGroundColor);
   qSettings.setValue("slowCPU",slowCPU);
   qSettings.setValue("lowRes",lowRes);
+  qSettings.setValue("confirmDeletion",confirmDeletion);
+  qSettings.setValue("confirmClose",confirmClose);
+
+
   qSettings.endGroup();
 }
 
@@ -67,6 +96,10 @@ void guiConfig::getParams()
   getValue(imageStretch,ui->stretchCheckBox);
   getValue(slowCPU,ui->slowCPUCheckBox);
   getValue(lowRes,ui->lowResCheckBox);
+
+  getValue(confirmDeletion,ui->confirmDeletionCheckBox);
+  getValue(confirmClose,ui->confirmCloseCheckBox);
+
 }
 
 void guiConfig::setParams()
@@ -78,6 +111,8 @@ void guiConfig::setParams()
   setColorLabel(imageBackGroundColor,true);
   setValue(slowCPU,ui->slowCPUCheckBox);
   setValue(lowRes,ui->lowResCheckBox);
+  setValue(confirmDeletion,ui->confirmDeletionCheckBox);
+  setValue(confirmClose,ui->confirmCloseCheckBox);
 }
 
 

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -23,6 +23,14 @@
 // one number is 1 startbit + 16 databits.
 #define WORDTIME (5.3108/32.)
 #define BITTIME (WORDTIME/17)
+#include <QString>
+
+
+
+QString stateStr[WAITSTART+1]=
+{
+    "D1900","D1900END","DELAYHALF","DELAYFULL","BITS","CALCDELAY","WAITSTART"
+};
 
 modeAVT::modeAVT(esstvMode m,unsigned int len, bool tx,bool narrowMode):modeBase(m,len,tx,narrowMode)
 {
@@ -44,22 +52,22 @@ void modeAVT::setupParams(double clock)
 }
 
 
-modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int syncPos,bool goToSync,unsigned int rxPos)
+modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int ,bool ,unsigned int rxPos)
 {
   unsigned int i=0;
   unsigned char a,b;
-  if(goToSync)
-    {
-      if(syncPos >=length)
-        {
-          addToLog(QString("modebase:process: syncPos: %1 > length %2").arg(syncPos).arg(length),LOGMODES);
-          return MBENDOFIMAGE;
-        }
-      else
-        {
-            for(i=0;i<syncPos;i++)  debugStatePtr[i]=debugState;
-        }
-    }
+//  if(goToSync)
+//    {
+//      if(syncPos >=length)
+//        {
+//          addToLog(QString("modebase:process: syncPos: %1 > length %2").arg(syncPos).arg(length),LOGMODES);
+//          return MBENDOFIMAGE;
+//        }
+//      else
+//        {
+//            for(i=0;i<syncPos;i++)  debugStatePtr[i]=debugState;
+//        }
+//    }
   if(avtTrailerDetect)
   {
       for(;i<length;i++)
@@ -70,7 +78,7 @@ modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int syncPos,bool go
           avgSample+=0.9*(sample-avgSample);
           switch(trailerState)
             {
-                case D1900:
+                case D1900: // wait for 1900 if detected; wait for end
                   if(fabs(avgSample-1900.) <50.)
                     {
                       debugState=st1900B;
@@ -84,32 +92,43 @@ modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int syncPos,bool go
                   if(count>50)
                     {
                       count=10;
-                      trailerState=D1900END;
+                      addToLog(QString("D1900 start: %1").arg(rxPos+i-50),LOGMODES);
+                      switchTrailerState(D1900END);
                     }
                 break;
-                case D1900END:
+                case D1900END: //  wait for end 1900
                   if(fabs(avgSample-1900.) <50.)
                     {
                       if(count<10) count++;
+                      if(duration>(unsigned int)(0.011*rxClock/SUBSAMPLINGFACTOR))
+                      {
+                          addToLog(QString("MBABORTED duration: %1, sampleCounter: %2").arg(duration).arg(rxPos+i),LOGMODES);
+                          duration=0;
+                          return MBABORTED;
+                      }
                     }
                   else
                     {
                       debugState=st1900E;
                       if (count >0) count --;
                     }
-                  if (count==0)
+                  if (count==0) // end of 1900 detected
                     {
                       duration-=5;
+                      addToLog(QString("duration: %1, sampleCounter: %2").arg(duration).arg(rxPos+i-10),LOGMODES);
                       if((duration<(unsigned int)(0.011*rxClock/SUBSAMPLINGFACTOR)) && (duration>(unsigned int)(0.009*rxClock/SUBSAMPLINGFACTOR)))
                         {
                           bitCounter=0;
                           count=10;
-                          trailerState=DELAYHALF;
+                          switchTrailerState(DELAYHALF);
                         }
                        else
                         {
+
+                         switchTrailerState(D1900);
+                         addToLog(QString("MBABORTED duration: %1, sampleCounter: %2").arg(duration).arg(rxPos+i),LOGMODES);
                          duration=0;
-                         trailerState=D1900;
+                         return MBABORTED;
                         }
                     }
                 break;
@@ -117,40 +136,40 @@ modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int syncPos,bool go
                   debugState=stHALF;
                   count++;
                   code=0;
-                  if(count>=(unsigned int)(round((BITTIME/2)*rxClock/SUBSAMPLINGFACTOR))) trailerState=BITS;
+                  if(count>=(unsigned int)(round((BITTIME/2)*rxClock/SUBSAMPLINGFACTOR))) switchTrailerState(BITS);
                 break;
                 case BITS:
                   debugState=stBITS+bitCounter;
                   code=code<<1;
                   if(avgSample>1900.) code|=0x0001;
                   bitCounter++;
-                  if (bitCounter==16) trailerState=CALCDELAY;
+                  if (bitCounter==16) switchTrailerState(CALCDELAY);
                   else
                     {
                       count=0;
-                      trailerState=DELAYFULL;
+                      switchTrailerState(DELAYFULL);
                     }
                 break;
                 case DELAYFULL:
                   debugState=stFULL;
                   count++;
-                  if(count>=(unsigned int)(round(BITTIME*rxClock/SUBSAMPLINGFACTOR))) trailerState=BITS;
+                  if(count>=(unsigned int)(round(BITTIME*rxClock/SUBSAMPLINGFACTOR))) switchTrailerState(BITS);
                 break;
                 case CALCDELAY:
                   //check if
                   a=code>>8;
                   b=(code&0xFF)^0xFF;
-                  addToLog(QString("avtcode =%1 mode=%1,pos=%1").arg(QString::number(code,16)).arg((code&0xE000)>>13).arg((code&0x1F00)>>8),LOGMODES);
+                  addToLog(QString("avtcode =%1 mode=%2,pos=%3").arg(QString::number(code,16)).arg((code&0xE000)>>13).arg((code&0x1F00)>>8),LOGMODES);
                   count=0;
                   duration=0;
                   if(a!=b)
                     {
-                      trailerState=D1900;
+                      switchTrailerState(D1900);
                       break;
                     }
                    a&=0x1F;
-                   delay=(unsigned int)(((31-a)*WORDTIME+BITTIME/2)*rxClock/SUBSAMPLINGFACTOR);
-                   trailerState=WAITSTART;
+                   delay=(unsigned int)((((31-a)*WORDTIME+BITTIME/2)*rxClock/SUBSAMPLINGFACTOR)+15);
+                   switchTrailerState(WAITSTART);
                 break;
                 case WAITSTART:
                   debugState=stWAIT;
@@ -173,6 +192,16 @@ modeBase::eModeBase modeAVT::process(quint16 *demod,unsigned int syncPos,bool go
       return modeBase::process(demod,0,false,rxPos);
     }
   return MBRUNNING;
+}
+
+
+void  modeAVT::switchTrailerState(eTrailerState newState)
+{
+  if(trailerState!=newState)
+    {
+      addToLog(QString("Swtching from %1 to %2").arg(stateStr[trailerState]).arg(stateStr[newState]) ,LOGMODES);
+    }
+  trailerState=newState;
 }
 
 

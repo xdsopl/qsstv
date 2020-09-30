@@ -151,43 +151,6 @@ void modeRobot2::calcPixelPositionTable(unsigned int colorLine,bool tx)
 
 }
 
-//void modeRobot2::calcPixelPositionTable(unsigned int colorLine,bool tx)
-//{
-//	unsigned int i;
-//	int ofx=0;
-//	if(tx) ofx=1;
-//  double start;
-//  if (tx) start=lineTimeTableTX[lineCounter];
-//  else start=lineTimeTableRX[lineCounter];
-//	debugState=colorLine;
-//	if (tx) start+=9;
-//	switch (colorLine)
-//		{
-//			case YLINEODD:
-//				start+=bp;
-//        for(i=0;i<activeSSTVParam->numberOfPixels;i++)
-//					{
-//            pixelPositionTable[i]=(unsigned int)round(start+(((float)(i+ofx)*2*visibleLineLength)/activeSSTVParam->numberOfPixels));
-//					}
-//			break;
-//			case REDLINE:
-//				start+=(bp+blank+2*visibleLineLength);
-//        for(i=0;i<activeSSTVParam->numberOfPixels;i++)
-//					{
-//            pixelPositionTable[i]=(unsigned int)round(start+(((float)(i+ofx)*visibleLineLength)/activeSSTVParam->numberOfPixels));
-//					}
-//			break;
-//			case BLUELINE:
-//				start+=(bp+2*blank+3*visibleLineLength);
-//        for(i=0;i<activeSSTVParam->numberOfPixels;i++)
-//					{
-//            pixelPositionTable[i]=(unsigned int)(round)(start+(((float)(i+ofx)*visibleLineLength)/activeSSTVParam->numberOfPixels));
-//					}
-//			break;
-//		}
-//}
-
-
 
 modeBase::embState modeRobot2::txSetupLine()
 {

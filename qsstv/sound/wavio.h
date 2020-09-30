@@ -82,7 +82,7 @@ public:
 	bool openFileForRead(QString fname,bool ask);
   bool openFileForWrite(QString fname, bool ask, bool isStereo);
   int  read (short int *dPtr, uint len);
-  bool write(quint16 *dPtr, uint len);
+  bool write(quint16 *dPtr, uint len, bool isStereo);
 	void setSamplingrate(int sr) {samplingrate=sr;}
   int getNumberOfChannels(){return numberOfChannels;}
   void closeFile();
@@ -97,7 +97,7 @@ public:
 		{
     if(inopf.isOpen())
       {
-      write(NULL,0); // flush everything in case we are writing
+      write(NULL,0,true); // flush everything in case we are writing
 			closeFile();
       }
 		}

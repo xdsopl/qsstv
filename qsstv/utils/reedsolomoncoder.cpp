@@ -99,7 +99,7 @@ bool reedSolomonCoder::decode(QByteArray &ba,QString fn,QString &newFileName,QBy
   init_rs(rs_dsize);
   // setup erasure info
   numMissing=0;
-  if(erasuresArray.count()>2)  // we have erasure positions
+  if(erasuresArray.count()>=2)  // we have erasure positions
     {
       totalSegments=erasuresArray.at(0);
       segmentLength=erasuresArray.at(1);
@@ -208,7 +208,7 @@ void reedSolomonCoder::distribute(byte *src, byte *dst, int rows, int cols, int 
 bool reedSolomonCoder::decode_and_write()
 {
 
-  register int i, j;
+  int i, j;
   int nr_erasures;
   int eras_pos[255];
   tr_buf.clear();

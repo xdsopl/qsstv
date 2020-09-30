@@ -10,6 +10,8 @@ extern QString bsrWF;
 extern QString startBinWF;
 extern QString endBinWF;
 extern QString wfFont;
+extern QString startRepeaterWF;
+extern QString endRepeaterWF;
 extern int wfFontSize;
 extern bool wfBold;
 

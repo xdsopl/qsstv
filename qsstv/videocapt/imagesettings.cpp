@@ -1,5 +1,5 @@
 /**************************************************************************
-*   Copyright (C) 2000-2012 by Johan Maes                                 *
+*   Copyright (C) 2000-2019 by Johan Maes                                 *
 *   on4qz@telenet.be                                                      *
 *   http://users.telenet.be/on4qz                                         *
 *                                                                         *
@@ -102,8 +102,7 @@ bool imageSettings::loadCapabilities()
   fd = v4l2_open(camDev, O_RDWR, 0);
   if(fd < 0)
     {
-      QString msg=
-      msg.sprintf("Unable to open file %s\n%s", camDev.constData(), strerror(errno));
+      QString msg=QString("Unable to open file %1\n%2").arg(camDev.constData()).arg(strerror(errno));
       QMessageBox::warning(NULL, "v4l2ucp: Unable to open file", msg, "OK");
       return false;
     }

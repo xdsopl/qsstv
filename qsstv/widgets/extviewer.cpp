@@ -23,7 +23,7 @@ void extViewer::setup(QString fn)
   // we want the original image
   ui->imViewer->stretch=true;
   ui->imViewer->setType(imageViewer::EXTVIEW);
-  ui->imViewer->openImage(fn,false,false,false);
+  ui->imViewer->openImage(fn,false,false,false,true);
   fileName=fn;
   QFileInfo fi(fn);
   fw=ui->imViewer-> getImagePtr()->width();

@@ -74,15 +74,15 @@ enum esstvMode
   ML280,
   ML320,
   FAX480,
+  AVT24,
+  AVT90,
+  AVT94,
   MP73N,
   MP110N,
   MP140N,
   MC110N,
   MC140N,
   MC180N,
-  AVT24,
-  AVT90,
-  AVT94,
   NOTVALID
 };
 
@@ -194,14 +194,12 @@ esstvMode modeLookup(unsigned int lineLength,DSPFLOAT clock);
 DSPFLOAT longestLine(DSPFLOAT clock);
 bool lineIsValid(esstvMode mode,unsigned int lineLength,DSPFLOAT clock);
 void printActiveSSTVParam(bool tx);
-void copyCustomParam(bool tx);
+//void copyCustomParam(bool tx);
 quint32 getMaxLineSamples();
 
-
-extern bool useVIS;
 extern bool autoSlantAdjust;
 extern bool autoSave;
-extern int squelch;
+extern int sensitivity;
 extern esstvMode sstvModeIndexRx;
 extern esstvMode sstvModeIndexTx;
 #endif

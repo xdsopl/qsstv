@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -24,8 +24,8 @@
 
 
 #define DSAMPLEFILTERLEN 180
-#define CONVLENGTH 200
-#define CONVDELAY  10
+#define CONVLENGTH 75
+#define CONVDELAY  55
 
 extern const FILTERPARAMTYPE downSampleFilterParam[DSAMPLEFILTERLEN];
 
@@ -38,16 +38,16 @@ public:
 	void allocate(unsigned int dataLength);
   void setFilterParams(bool scaled);
   void downSample4(short int *data);
-//  void downSample4(DSPFLOAT *data, DSPFLOAT *filteredData, unsigned int len);
   FILTERPARAMTYPE *filteredDataPtr() {return filteredDataBuffer;}
   void init();
   DSPFLOAT avgVolumeDb;
-  unsigned int *getVolumePtr() {return volumeBuffer;}
+  FILTERPARAMTYPE *getVolumePtr() {return volumeBuffer;}
 
 private:
 	void normalizeGain();
   FILTERPARAMTYPE *filteredDataBuffer;
-  unsigned int *volumeBuffer;
+//  FILTERPARAMTYPE *volumeDataBuffer;
+  FILTERPARAMTYPE *volumeBuffer;
   FILTERPARAMTYPE *filterParams;
 	unsigned int filterLength;
   FILTERPARAMTYPE *samplesI;

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -22,10 +22,11 @@
 #define EDITORSCENE_H
 
 #include <QGraphicsScene>
+//#include <QGraphicsView>
 //#include "graphics.h"
 #include "graphicitems.h"
-#include "utils/supportfunctions.h"
-#include "utils/macroexpansion.h"
+#include "supportfunctions.h"
+#include "macroexpansion.h"
 
 class QGraphicsSceneMouseEvent;
 
@@ -38,39 +39,39 @@ class QGraphicsSceneMouseEvent;
 
 class editorScene : public QGraphicsScene
 {
-	Q_OBJECT
+  Q_OBJECT
 
 public:
-	enum eImageType
-		{
-			NONE,				/*!< no image defined */
-			FLATIMAGE, /*!< loaded image is a simple image (png,jpeg,...) */
-			TEMPLATE    /*!< loaded image is a template file */
-		};
-	enum eMode { MOVE, INSERT,PICK};
+  enum eImageType
+  {
+    NONE,				/*!< no image defined */
+    FLATIMAGE, /*!< loaded image is a simple image (png,jpeg,...) */
+    TEMPLATE    /*!< loaded image is a template file */
+  };
+  enum eMode { MOVE, INSERT};
   enum doChange {DNOCHANGE = 0, DFILLCOLOR = 1, DLINECOLOR=2, DGRADIENT=4,DTEXT = 8,DFONT=16,DPEN=32,DTRANSFORM=64};
-	Q_DECLARE_FLAGS(changeFlags, doChange);
+  Q_DECLARE_FLAGS(changeFlags, doChange);
   editorScene(QGraphicsView *parent=0);
-	~editorScene();
-	QColor fillColor;
-	QColor lineColor;
-	QGradient gradient;
-	QColor gradientColor;
-	QFont  font;
-	QString text;
-	QString fl;
-	double penWidth;
-	void apply(changeFlags cf);
-	void clearAll();
-	QRectF border;
-	int rotate;
-	qreal hShear;
-	qreal vShear;
-	bool load(QFile &f);
-	bool save(QFile &f,bool templ);
+  ~editorScene();
+  QColor fillColor;
+  QColor lineColor;
+  QGradient gradient;
+  QColor gradientColor;
+  QFont  font;
+  QString text;
+  QString fl;
+  double penWidth;
+  void apply(changeFlags cf);
+  void clearAll();
+  QRectF border;
+  int rotate;
+  qreal hShear;
+  qreal vShear;
+  bool load(QFile &f);
+  bool save(QFile &f,bool templ);
   void setImage(QImage *im);
-	eMode mode;
-	eImageType getImageType(){return imageType;}
+  eMode mode;
+  eImageType getImageType(){return imageType;}
   QImage *renderImage(int w, int h);
   macroExpansion mexp;
   void overlay(QImage *ima);
@@ -78,60 +79,65 @@ public:
   QImage *getImagePtr() {return localImage;}
   void addConversion(QChar tag,QString value,bool clear=false);
 
-// bool event(QEvent *);
+  // bool event(QEvent *);
 
 public slots:
-	void setMode(eMode m);
-	void setItemType(itemBase::egraphType tp);
-//    void editorLostFocus(DiagramTextItem *item);
-	void slotCopy();
-	void slotPaste();
-	void slotExpand();
+  void setMode(eMode m);
+  void setItemType(graphItemBase::egraphType tp);
+  //    void editorLostFocus(DiagramTextItem *item);
+  void slotCopy();
+  void slotPaste();
+  void slotExpand();
 
-	void slotDeleteItem();
-	void slotLock();
-	void slotUnlock();
-	void slotBringToFront();
-	void slotSendToBack();
-	void slotSendBackward();
-	void slotSendForward();
-	void slotChangeText();
+  void slotDeleteItem();
+  void slotLock();
+  void slotUnlock();
+  void slotBringToFront();
+  void slotSendToBack();
+  void slotSendBackward();
+  void slotSendForward();
+  void slotChangeText();
+#ifndef QT_NO_DEBUG
+  void slotProperties();
+  void dumpItems();
+#endif
+
 
 signals:
-//	void itemInserted(itemBase *itm);
-//	void textInserted(itemBase *itm);
-	void changeSize(int,int);
-	void itemSelected(itemBase *itm);
-	void colorSelected( const QPointF &p);
+  //	void itemInserted(graphItemBase *itm);
+  //	void textInserted(graphItemBase *itm);
+  void changeSize(int,int);
+  void itemSelected(graphItemBase *itm);
+  void colorSelected( const QPointF &p);
 
 protected:
-	void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent);
-	void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent);
-	void mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent);
+  void mousePressEvent(QGraphicsSceneMouseEvent *mouseEvent);
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *mouseEvent);
+  void mouseReleaseEvent(QGraphicsSceneMouseEvent *mouseEvent);
 
 
 private:
-	itemBase *copyItem;
-	itemBase::egraphType itemType;
-	bool leftButtonDown;
+  graphItemBase *copyItem;
+  graphItemBase::egraphType itemType;
+  bool leftButtonDown;
 
-	bool pasted;
-	qreal zMax;
-	QPointF startPoint;
-// Context menus
-	QMenu *contextMenu;
-	QMenu *arrange;
+  bool pasted;
+  qreal zMax;
+  QPointF startPoint;
+  // Context menus
+  QMenu *contextMenu;
+  QMenu *arrange;
 
-	void optimizeDepth();
-	void itemSetup(itemBase *item);
-	void makeCopy(itemBase *it);
-	eImageType imageType;
+  void optimizeDepth();
+  void itemSetup(graphItemBase *item);
+  void makeCopy(graphItemBase *it);
+  eImageType imageType;
   QImage *localImage;
   void flattenImage(int w,int h);
   void convertText();
-//  QString textConversion(QString str);
-//  QString convertedText;
-  itemBase *borderItemPtr;
+  //  QString textConversion(QString str);
+  //  QString convertedText;
+  graphItemBase *borderItemPtr;
   void convertReplayImage();
 
 };

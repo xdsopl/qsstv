@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -27,10 +27,11 @@
 #include "editor/editor.h"
 #include "editor/editorscene.h"
 
-
+# define IMAGETESTVIEWER
 class QMenu;
 class QAction;
 class editor;
+class jp2IO;
 
 class imageViewer : public QLabel
 {
@@ -55,8 +56,8 @@ public:
 
 
   void init(thumbType tp);
-  bool openImage(QString &filename, QString start, bool ask, bool showMessage, bool emitSignal,bool fromCache);
-  bool openImage(QString &filename, bool showMessage, bool emitSignal, bool fromCache);
+  bool openImage(QString &filename, QString start, bool ask, bool showMessage, bool temitSignal, bool fromCache, bool background);
+  bool openImage(QString &filename, bool showMessage, bool emitSignal, bool fromCache,bool background);
   bool openImage(QImage im);
   bool openImage(QByteArray *ba);
   void setParam(QString templateFn,bool usesTemplate,int width=0,int height=0);
@@ -72,9 +73,11 @@ public:
     validImage=v;
   }
 
+  int diplayedImageBytecount();
+
   void createImage(QSize sz, QColor fill, bool scale);
   QRgb *getScanLineAddress(int line);
-  void copy(imageViewer *src);
+  //  void copy(imageViewer *src);
   void setType(thumbType t);
   QString getFilename() {return imageFileName;}
   QString getCompressedFilename() {return compressedFilename;}
@@ -85,7 +88,7 @@ public:
   void save(QString fileName, QString fmt, bool convertRGB, bool source);
   bool copyToBuffer(QByteArray *ba);
   //  int calcSize(int &sizeRatio);
-  uint setSizeRatio(int sizeRatio,bool usesCompression);
+  uint setSize(int tcommpressSize,bool usesCompression);
   void setAspectMode(Qt::AspectRatioMode mode);
   int getFileSize(){return fileSize;}
   QString toCall;
@@ -96,6 +99,7 @@ public:
   QString comment3;
   bool stretch;
   void getOrgSize(int &w,int &h) {w=orgWidth; h=orgHeight;}
+  QImage *getDisplayedImage();
 
 
   int applyTemplate();
@@ -104,6 +108,8 @@ public:
 protected:
   void resizeEvent(QResizeEvent *);
 
+public slots:
+  void slotToTX();
 
 private slots:
   void slotDelete();
@@ -113,12 +119,13 @@ private slots:
   void slotPrint();
   void slotUploadFTP();
   void slotProperties();
-  void slotToTX();
+
   void slotView();
   void slotBGColorChanged();
   void slotZoomIn();
   void slotZoomOut();
   void slotLeftClick();
+  void slotJp2ImageDone(bool success, bool fromCache);
 
 
 signals:
@@ -154,7 +161,7 @@ private:
   QAction *zoomOutAct;
 
   //  double psizeRatio;
-  int compressionRatio; // 0=lossless 99 is max compression
+  int compressSize;   // target size of compressed image
   int fileSize;
   QString format;
   QMovie qm;
@@ -170,6 +177,19 @@ private:
   QRect view;
   QPoint clickPos;
   QTimer clickTimer;
+  QThread *threadIm;
+  jp2IO *jp2Ptr;
+  bool cacheHit;
+  QString tempFilename;
+  QImage tempImage;
+  bool emitSignal;
+  QString cacheFileName;
+  bool  processImageDisplay(bool success, bool showMessage, bool fromCache);
+#ifdef IMAGETESTVIEWER
+  void imageTestViewer(QImage *im, QString infoStr);
+#endif
+
+
 
 };
 

@@ -501,6 +501,13 @@
             </property>
            </spacer>
           </item>
+          <item>
+           <widget class="QCheckBox" name="addExtensionCheckBox">
+            <property name="text">
+             <string>add image format extension</string>
+            </property>
+           </widget>
+          </item>
          </layout>
         </item>
         <item>

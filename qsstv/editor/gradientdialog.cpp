@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2000-2008 by Johan Maes                                 *
+ *   Copyright (C) 2000-2019 by Johan Maes                                 *
  *   on4qz@telenet.be                                                      *
  *   http://users.telenet.be/on4qz                                         *
  *                                                                         *
@@ -19,7 +19,7 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 #include "gradientdialog.h"
-#include "appdefs.h"
+//#include "appdefs.h"
 #include <QColorDialog>
 
 
@@ -39,7 +39,7 @@ gradientDialog::gradientDialog(QWidget *parent):QDialog(parent), Ui::gradientFor
 	connect(pos2SpinBox,SIGNAL(valueChanged(int)),SLOT(slotUpdate()));
 	connect(pos3SpinBox,SIGNAL(valueChanged(int)),SLOT(slotUpdate()));
 	connect(pos4SpinBox,SIGNAL(valueChanged(int)),SLOT(slotUpdate()));
-	connect(dial,SIGNAL(valueChanged(int)),SLOT(slotUpdate()));
+  connect(directionDial,SIGNAL(valueChanged(int)),SLOT(slotUpdate()));
 	connect(noGradientButton,SIGNAL(clicked()),SLOT(slotUpdate()));
 	connect(linearGradientButton,SIGNAL(clicked()),SLOT(slotUpdate()));
 	connect(radialGradientButton,SIGNAL(clicked()),SLOT(slotUpdate()));
@@ -70,7 +70,8 @@ void gradientDialog::readSettings()
 	pos3SpinBox->setValue(gParam.pos3);
 	pos4SpinBox->setValue(gParam.pos4);
 	gParam.direction=qSettings.value("graddirection", 0 ).toInt();
-	dial->setValue((gParam.direction+90)%360);
+  directionDial->setValue((gParam.direction+90)%360);  // 0 degrees is East not North
+  directionLCD->display(gParam.direction);
 	if(qSettings.value("nogradbutton", 1 ).toBool())
 		{
 			noGradientButton->setChecked(true);
@@ -179,7 +180,8 @@ void gradientDialog::slotUpdate()
    QString s;
 	QPalette palette;
 	QBrush brush;
-	gParam.direction=(270+dial->value())%360;
+  gParam.direction=(270+directionDial->value())%360; // 0 degrees is East not North
+  directionLCD->display(gParam.direction);
 	gParam.pos1=pos1SpinBox->value();
 	gParam.pos2=pos2SpinBox->value();
 	gParam.pos3=pos3SpinBox->value();
@@ -199,21 +201,6 @@ void gradientDialog::slotUpdate()
   s=gParam.color4.name();
   color4Button->setStyleSheet("background-color: "+s+"; border-style: outset; border-width: 2px;border-radius: 10px; border-color: beige; padding: 6px");
 
-//	brush.setStyle(Qt::SolidPattern);
-
-//	brush.setColor(gParam.color1);
-//	palette.setBrush(QPalette::Active, QPalette::Button, brush);
-//	color1Button->setPalette(palette);
-
-//	brush.setColor(gParam.color2);11
-//	palette.setBrush(QPalette::Active, QPalette::Button, brush);
-//	color2Button->setPalette(palette);
-//	brush.setColor(gParam.color3);
-//	palette.setBrush(QPalette::Active, QPalette::Button, brush);
-//	color3Button->setPalette(palette);
-//	brush.setColor(gParam.color4);
-//	palette.setBrush(QPalette::Active, QPalette::Button, brush);
-//	color4Button->setPalette(palette);
 	brush.setStyle(Qt::SolidPattern);
 	if(gParam.type!=sgradientParam::NONE)
 		{
@@ -284,8 +271,8 @@ QGradient buildGradient(sgradientParam prm, QRectF f)
 							temp=y1; y1=y2;y2=temp;
 						}
 				}
-
 			QLinearGradient g(x1,y1,x2,y2);
+
 			grSetup(prm,g);
 			return g;
 		}
@@ -295,7 +282,7 @@ QGradient buildGradient(sgradientParam prm, QRectF f)
 			grSetup(prm,g);
 			return g;
 		}
-	else if(sgradientParam::CONICAL)
+  else
 		{
 			QConicalGradient g(QPointF(f.x()+f.width()/2,f.y()+f.height()/2),prm.direction);
 			grSetup(prm,g);

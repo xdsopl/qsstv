@@ -2,8 +2,8 @@
 #define BSRFORM_H
 
 #include <QDialog>
-#include "drmrx/sourcedecoder.h"
-#include "drmtx/drmtransmitter.h"
+#include "sourcedecoder.h"
+#include "drmtransmitter.h"
 
 namespace Ui {
 class bsrForm;

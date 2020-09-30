@@ -1,8 +1,8 @@
 #include "spectrumwidget.h"
 #include "appglobal.h"
 #include "ui_spectrumwidget.h"
-#include "utils/supportfunctions.h"
-#include "utils/logging.h"
+#include "supportfunctions.h"
+#include "logging.h"
 #include "markerwidget.h"
 
 spectrumWidget::spectrumWidget(QWidget *parent) : QFrame(parent),  ui(new Ui::spectrumWidget)
@@ -20,19 +20,19 @@ spectrumWidget::~spectrumWidget()
   delete ui;
 }
 
-void spectrumWidget::init(int length,int slices,int isamplingrate)
+void spectrumWidget::init(int length,int numBlocks,int isamplingrate)
 {
-  addToLog(QString("Size: %1, Slices %2, Samplingrate %3").arg(length).arg(slices).arg(isamplingrate),LOGFFT); 
-  fftFunc.init(length,slices,isamplingrate);
-  ui->spectrWidget->init(length,slices,isamplingrate);
-  ui->waterfallWidget->init(length,slices,isamplingrate);
+  addToLog(QString("Size: %1, Number of blocks %2, Samplingrate %3").arg(length).arg(numBlocks).arg(isamplingrate),LOGFFT);
+  fftFunc.init(length,numBlocks,isamplingrate);
+  ui->spectrWidget->init(length,numBlocks,isamplingrate);
+  ui->waterfallWidget->init(length,numBlocks,isamplingrate);
 }
 
 
 void spectrumWidget::realFFT(double *iBuffer)
 {
     fftFunc.realFFT(iBuffer);
-    ui->spectrWidget->showFFT(fftFunc.out);
+     ui->spectrWidget->showFFT(fftFunc.out);
     ui->waterfallWidget->showFFT(fftFunc.out);
 }
 

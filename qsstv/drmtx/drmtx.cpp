@@ -8,7 +8,7 @@
 #include "hybridcrypt.h"
 #include "configparams.h"
 #include "txwidget.h"
-#include "ftp.h"
+
 #include "hybridcrypt.h"
 
 
@@ -29,7 +29,7 @@ drmTx::~drmTx()
 
 void drmTx::init()
 {
-  connect(onlineStatusIntf, SIGNAL(listingComplete()), this, SLOT(slotWhoResult()));
+
 }
 
 void drmTx::start()
@@ -128,7 +128,6 @@ bool drmTx::initDRMImage(bool binary,QString fileName)
   else
     {
       hybridCrypt hc;
-
       drmTxHybridParameters.bandwith=1; // bw 2.2
       drmTxHybridParameters.robMode=2;  // mode E
       drmTxHybridParameters.interleaver=0; // long
@@ -157,11 +156,13 @@ void drmTx::updateTxList()
   txList.last().extension=drmTxFileName.suffix();
   txList.last().ba=baDRM;
 
-  if (useHybrid) {
+  if (useHybrid)
+    {
       txList.last().drmParams=drmTxHybridParameters;
       ftpDRMHybridNotifyCheck(txList.last().filename+"."+txList.last().extension);
     }
-  else {
+  else
+    {
       txList.last().drmParams=drmTxParameters;
     }
 
@@ -172,24 +173,15 @@ void drmTx::updateTxList()
 bool drmTx::ftpDRMHybrid(QString fileName, QString destName)
 {
   QByteArray ba;
-
-  QString ftpErrorStr;
-  ftpSetupEvent *ftpSetup;
-  ftpUploadFileEvent *ftpUpload;
-
-  addToLog(QString("destName='%1' last='%2'").arg(destName).arg(lastHybridUpload),LOGFTP);
+  //  ftpFunctions ff;
+  //  QString ftpErrorStr;
+  addToLog(QString("destName='%1' last='%2'").arg(destName).arg(lastHybridUpload),LOGFTPFUNC);
 
   if (destName == lastHybridUpload)
     {
-      addToLog(QString("%1 already uploaded").arg(destName), LOGFTP);
+      addToLog(QString("%1 already uploaded").arg(destName), LOGFTPFUNC);
       return true;
     }
-  ftpSetup=new ftpSetupEvent(hybridTxIntf,hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin,hybridFtpPassword,hybridFtpRemoteDirectory+"/"+hybridFtpHybridFilesDirectory);
-
-  QApplication::postEvent(dispatcherPtr,ftpSetup);
-
-  //  hybridTxIntf->setupConnection(hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin,hybridFtpPassword,hybridFtpRemoteDirectory+"/"+hybridFtpHybridFilesDirectory);
-    hybridTxIntf->closeWhenDone();
 
   if (fileName.isEmpty())
     {
@@ -197,153 +189,32 @@ bool drmTx::ftpDRMHybrid(QString fileName, QString destName)
       if(!ftmp.open()) return false;
       ftmp.write(ba);
       ftmp.close();
-      ftpUpload=new ftpUploadFileEvent(hybridTxIntf,ftmp.fileName(),destName,true);
+      fileName=ftmp.fileName();
     }
-  else
-    {
-      ftpUpload=new ftpUploadFileEvent(hybridTxIntf,fileName,destName,true);
-    }
-  QApplication::postEvent(dispatcherPtr,ftpUpload);
-  while(dispatcherPtr->hybridTxDone==DFTPWAITING)
-    {
-      qApp->processEvents();
-    }
-
-
-  if(dispatcherPtr->hybridTxDone!=DFTPOK)
-    {
-      ftpErrorStr=hybridTxIntf->getLastError();
-      addToLog(QString("ftpDRMHybrid Upload Error: %1").arg(ftpErrorStr),LOGDRMTX);
-      displayMBoxEvent *mbe = new displayMBoxEvent("Upload Error",ftpErrorStr);
-      QApplication::postEvent( dispatcherPtr, mbe );
-      return false;
-    }
+  ff.setupFtp("UploadHybridFile",hybridFtpRemoteHost,hybridFtpPort,hybridFtpLogin,hybridFtpPassword,hybridFtpRemoteDirectory+"/"+hybridFtpHybridFilesDirectory);
+  ff.uploadFile(fileName,destName,false,true);
   lastHybridUpload=destName;
-
   addToLog(QString("hybridTxCount updated to %1").arg(hybridTxCount),LOGDRMTX);
   return true;
 }
 
 void drmTx::clearLastHybridUpload()
 {
-  addToLog(QString("Clearing lasHybridUpload, was: %1").arg(lastHybridUpload),LOGFTP);
-  lastHybridUpload = "";
+  if(!lastHybridUpload.isEmpty())
+    {
+      addToLog(QString("Clearing lasHybridUpload, was: %1").arg(lastHybridUpload),LOGFTPFUNC);
+      lastHybridUpload = "";
+    }
 }
 
-bool drmTx::ftpDRMHybridNotifyCheck(QString fn)
+void drmTx::ftpDRMHybridNotifyCheck(QString mask)
 {
-  txDRMNotifyEvent *txne;
-  ftpSetupEvent *ftpSetup;
+  if (!enableHybridNotify) return;
   notifyCheckEvent *ce;
-  if (!enableHybridNotify) return false;
-  
-//  notifyTXIntf->setupConnection(hybridFtpRemoteHost, hybridFtpPort,
-//                                hybridFtpLogin, hybridFtpPassword,
-//                                hybridFtpRemoteDirectory+"/"+hybridFtpHybridFilesDirectory);
-  ftpSetup=new ftpSetupEvent(notifyTXIntf,hybridNotifyRemoteHost,hybridNotifyPort,hybridNotifyLogin,hybridNotifyPassword,hybridNotifyRemoteDir+"/RxOkNotifications1");
-  QApplication::postEvent(dispatcherPtr,ftpSetup);
-  //    }
-  //  else
-  //    // NOT CORRECT !!!  there is no default;
-  //    {
-  //      hybridCrypt hc;
-  //      // notification to last RX Hybrid Image server or custom server if selected
-  //      notifyTXIntf->setupConnection(hc.host(),hc.port(),hc.user(),hc.passwd(),hc.dir()+"/RxOkNotifications1");
-  //    }
-
-  txne = new txDRMNotifyEvent("");
-  QApplication::postEvent( dispatcherPtr, txne );
-  ce=new notifyCheckEvent(notifyTXIntf,fn, 15, 60/15, true);
+  ce=new notifyCheckEvent(mask);
   QApplication::postEvent( dispatcherPtr, ce );
-
-//  notifyTXIntf->startNotifyCheck(fn, 15, 60/15, true);
-  return true;
 }
 
-//void drmTx::rxNotification(QString info)
-//{
-//  if (info != "") {
-//      txDRMNotifyAppendEvent *txne = new txDRMNotifyAppendEvent(info);
-//      QApplication::postEvent( dispatcherPtr, txne );
-//    }
-//}
-
-
-void drmTx::setupStatusIntf()
-{
-  if (!hybridNotifyRemoteHost.isEmpty())
-    {
-      onlineStatusIntf->setupConnection(hybridNotifyRemoteHost, hybridNotifyPort,
-                                        hybridNotifyLogin, hybridNotifyPassword,
-                                        hybridNotifyRemoteDir+"/OnlineCallsigns1");
-
-      onlineStatusIntf->closeWhenDone();
-      onlineStatusIntf->hideProgress();
-    }
-}
-
-void drmTx::who()
-{
-  // get a list of online callsigns
-  setupStatusIntf();
-  onlineStatusIntf->getListing("*");
-
-  rxDRMNotifyEvent *rxne = new rxDRMNotifyEvent("Retrieving List...");
-  QApplication::postEvent( dispatcherPtr, rxne );
-
-  // slotWhoResult is called when we have the info
-}
-
-void drmTx::slotWhoResult()
-{
-  int i;
-  QString info="Online User List\n";
-
-  QList <QUrlInfo> users = onlineStatusIntf->getListingResults();
-  onlineStatusIntf->clearListingResults();
-
-  for (i=0; i<users.count(); i++) {
-      info += users.at(i).name()+"\n";
-    }
-
-  // put it in the RX widget notifications box
-  rxDRMNotifyEvent *rxne = new rxDRMNotifyEvent(info);
-  QApplication::postEvent( dispatcherPtr, rxne );
-}
-
-
-void drmTx::setOnlineStatus(bool online, QString info)
-{
-  // we can use onlineStatusInt directly because this function is only used from the main thread
-
-  addToLog(QString("Call:%1 online:%2, info:%3").arg(myCallsign).arg(online).arg(info),LOGFTP);
-
-  if (onlineStatusEnabled) {
-      setupStatusIntf();
-      if (online)
-        {
-          onlineStatusIntf->uploadData(QByteArray("Dummy\r\n"), myCallsign+"."+info);
-        }
-      else
-        {
-          onlineStatusIntf->mremove(myCallsign+".*");
-        }
-    }
-
-  if (enableHybridRx && !online)
-    {
-      hybridCrypt hc;
-      hybridTxIntf->setupConnection(hc.host(),hc.port(),hc.user(),hc.passwd(),hc.dir()+"/"+hybridFtpHybridFilesDirectory);
-      hybridTxIntf->mremove("de_"+myCallsign+"-*"); // Delete hybrid images sent
-      hybridTxIntf->closeWhenDone();
-    }
-
-  if (!online) {
-      onlineStatusIntf->wait(-1);
-      hybridTxIntf->wait(-1);
-      notifyTXIntf->wait(-1);
-    }
-}
 
 double  drmTx::calcTxTime(int overheadTime)
 {
