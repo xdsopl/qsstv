@@ -549,6 +549,8 @@ isEmpty(PREFIX) {
     }
 target.path = $$PREFIX/bin
 
+metadatafiles.files =qsstv.appdata.xml
+metadatafiles.path = $$PREFIX/share/metainfo/
 shortcutfiles.files =qsstv.desktop
 shortcutfiles.path = $$PREFIX/share/applications/
 data.files += icons/filedupes.png
@@ -559,9 +561,10 @@ data.path=$$PREFIX/share/icons/hicolor/42x42/apps/
 RESOURCES += \
     qsstv.qrc
 
-INSTALLS += target dox shortcutfiles data
+INSTALLS += target dox metadatafiles shortcutfiles data
 
 DISTFILES += \
+    qsstv.appdata.xml \
     qsstv.desktop \
     documentation/api/api.doxy \
     documentation/manual/images/editor_1b.png \

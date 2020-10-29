@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+ <id>qsstv.desktop</id>
+ <metadata_license>CC0-1.0</metadata_license>
+ <project_license>GPL-3.0</project_license>
+ <name>QSSTV</name>
+ <summary>Program for receiving and transmitting SSTV and HAMDRM</summary>
+ <description>
+  <p>QSSTV is a program for receiving and transmitting SSTV and HAMDRM (sometimes called DSSTV). It is compatible with most of MMSSTV and EasyPal.</p>
+ </description>
+ <screenshots>
+  <screenshot type="default">
+   <image>http://users.telenet.be/on4qz/qsstv/manual/rxwidget1.png</image>
+   <caption>Receive SSTV Window</caption>
+  </screenshot>
+ </screenshots>
+ <url type="homepage">http://users.telenet.be/on4qz</url>
+ <content_rating type="oars-1.1"/>
+</component>
